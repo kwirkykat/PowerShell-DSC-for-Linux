@@ -3928,6 +3928,22 @@ class nxFileInventoryTestCases(unittest2.TestCase):
             print d['DestinationPath'], d['Contents']
 
 
+    def test_is_worker_conf_properly_configured(self):
+        self.assertTrue(nxOMSAutomationWorker.is_worker_conf_properly_configured(self.workspace_id))
+        self.assertFalse(nxOMSAutomationWorker.is_worker_conf_properly_configured(self.agent_id))
+
+
+        processes2 = ['1000 python /opt/microsoft/omsconfig/modules/nxOMSAutomationWorker/DSCResources/MSFT_nxOMSAutomationWorkerResource/automationworker/worker/hybridworker.py /var/opt/microsoft/omsagent/state/automationworker/worker.conf managed rworkspace:cfd4ef08-4011-428a-8947-0c2f4605980f rversion:1.4',
+                     '1001 python /opt/microsoft/omsconfig/modules/nxOMSAutomationWorker/DSCResources/MSFT_nxOMSAutomationWorkerResource/automationworker/worker/hybridworker.py /var/opt/microsoft/omsagent/state/automationworker/worker.conf managed rworkspace:cfd4ef08-4011-428a-8947-0c2f4605980f rversion:1.4',
+                     '1002 python /opt/microsoft/omsconfig/modules/nxOMSAutomationWorker/DSCResources/MSFT_nxOMSAutomationWorkerResource/automationworker/worker/main.py /var/opt/microsoft/omsagent/state/automationworker/oms.conf rworkspace:cfd4ef08-4011-428a-8947-0c2f4605980f 1.4',
+                     '1003 python /opt/microsoft/omsconfig/modules/nxOMSAutomationWorker/DSCResources/MSFT_nxOMSAutomationWorkerResource/automationworker/worker/main.py /var/opt/microsoft/omsagent/state/automationworker/oms.conf rworkspace:cfd4ef08-4011-428a-8947-0c2f4605980f 1.4',
+                     '']
+        stray_processes = nxOMSAutomationWorker.get_stray_worker_and_manager_pids(processes2, self.workspace_id)
+        self.assertTrue(stray_processes == set([]))
+
+        processes3 = ['']
+        stray_processes = nxOMSAutomationWorker.get_stray_worker_and_manager_pids(processes3, self.workspace_id)
+        self.assertTrue(stray_processes == set([]))
 
 ######################################
 if __name__ == '__main__':
