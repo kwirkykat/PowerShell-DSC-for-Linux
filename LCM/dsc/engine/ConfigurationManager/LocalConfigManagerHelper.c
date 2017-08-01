@@ -867,6 +867,7 @@ MI_Result CallSetConfiguration(
     MI_Uint32 dwFlags,
     MI_Boolean force,
     _In_ MI_Context* context,
+    _In_ MI_Instance *metaConfigInstance,
     _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
 {
     MI_Result r = MI_RESULT_OK;
@@ -884,8 +885,20 @@ MI_Result CallSetConfiguration(
     r = GetMetaConfig(&metaConfigInstance);
     EH_CheckResult(r);
 
-    r = DSC_MI_Instance_GetElement(metaConfigInstance, MSFT_DSCMetaConfiguration_ConfigurationMode, &configModeValue, NULL, NULL, NULL);
+    r = DSC_MI_Instance_GetElement(metaConfigInstance, MSFT_DSCMetaConfiguration_ConfigurationMode, &configModeValue, NULL, &flags, NULL);
     EH_CheckResult(r);
+
+    // We tell user that LCM is running in MonitorOnly mode and will be testing only
+	if (ShouldMonitorOnly(configModeValue.string) && !(dwFlags & LCM_SET_METACONFIG))
+	{
+		LCM_BuildMessage(lcmContext, ID_LCM_MONITORONLY_CONFIGURATIONMODE, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+	}
+	else
+	{
+		//log method start in verbose
+		SetMessageInContext(ID_OUTPUT_OPERATION_START, ID_OUTPUT_ITEM_SET, lcmContext);
+		LCM_BuildMessage(lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+	}
 
     // We tell user that LCM is running in MonitorOnly mode and will be testing only
     if (ShouldMonitorOnly(configModeValue.string) && !(dwFlags & LCM_SET_METACONFIG))
