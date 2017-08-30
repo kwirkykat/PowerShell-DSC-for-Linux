@@ -4667,7 +4667,7 @@ MI_Result ReportStatusToServer(
         CPU_GetLocalTimestamp(&time);
         value.datetime = PalDatetimeToMiDatetime(time);
         result = MI_Instance_AddElement(statusReport, REPORTING_ENDTIME, &value, MI_DATETIME, 0);
-        if (r != MI_RESULT_OK)
+        if (result != MI_RESULT_OK)
         {
             MI_Application_Close(&miApp);
             MI_Instance_Delete(statusReport);
@@ -4789,6 +4789,7 @@ MI_Result ReportStatusToServer(
                 }
             }
         }
+        /*
         // Set Job Id
         if (configurationStatus->JobID.exists)
         {
@@ -4804,6 +4805,7 @@ MI_Result ReportStatusToServer(
                 return result;
             }
         }
+        */
     }
     /**********************/
 

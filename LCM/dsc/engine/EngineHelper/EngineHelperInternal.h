@@ -24,6 +24,7 @@
 #endif
 #include <micodec.h>
 #include "MSFT_DSCMetaConfiguration.h"
+#include <MSFT_DSCConfigurationStatus.h>
 
 /*Macro functions to return on an error*/
 #define RETURN_RESULT_IF_FAILED(resultCode)                                                             if(resultCode!=MI_RESULT_OK) return resultCode;
@@ -634,6 +635,15 @@ typedef struct _PropertyQualifier
     const MI_Char *wszQualifierName;
 } PropertyQualifier;
 
+typedef struct _DocumentMetaData
+{
+    const MI_Char * Version;
+    const MI_Char * Author;
+    const MI_Char * Name;
+    const MI_Char * GenerationDate;
+    const MI_Char * GenerationHost;
+} DocumentMetaData;
+
 typedef struct _LCMProviderContext
 {
     MI_Boolean bReportErrorsToServer;
@@ -645,6 +655,8 @@ typedef struct _LCMProviderContext
     MI_Boolean bNotFirstTimeReport; //signifies if this is the first time report is being sent.
     MI_Serializer *serializer;
     void * registrationManager;
+    MSFT_DSCConfigurationStatus_Array configurationStatus;
+    DocumentMetaData documentMetaData;
 } LCMProviderContext;
 
 MI_Char* DSC_strdup(MI_Char* s);
