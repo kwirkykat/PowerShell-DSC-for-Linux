@@ -4482,12 +4482,12 @@ MI_Result GetStatusForServer(
 {
     MI_Value value;
     MI_Boolean couldSetLocaleFromConfStatus = MI_FALSE;
-    MI_Result r = MI_RESULT_OK;
+    MI_Result result = MI_RESULT_OK;
 
-    r = DSC_MI_Application_NewInstance(miApp, REPORTING_STATUSCLASSNAME, NULL, statusObject);
-    if (r != MI_RESULT_OK)
+    result = DSC_MI_Application_NewInstance(miApp, REPORTING_STATUSCLASSNAME, NULL, statusObject);
+    if (result != MI_RESULT_OK)
     {
-        return r;
+        return result;
     }
 
 /* TODO remove:
@@ -4551,12 +4551,12 @@ MI_Result GetStatusForServer(
     if (!couldSetLocaleFromConfStatus)
     {
         value.string = REPORTING_DEFAULT_MESSAGE;
-        r = MI_Instance_AddElement(*statusObject, REPORTING_LOCALE, &value, MI_STRING, 0);
-        if (r != MI_RESULT_OK)
+        result = MI_Instance_AddElement(*statusObject, REPORTING_LOCALE, &value, MI_STRING, 0);
+        if (result != MI_RESULT_OK)
         {
             MI_Instance_Delete(*statusObject);
             *statusObject = NULL;
-            return r;
+            return result;
         }
     }
 
@@ -4579,7 +4579,7 @@ MI_Result ReportStatusToServer(
     MI_Instance *statusObject = NULL;
     MI_Instance *extendedError = NULL;
     MI_Uint32 getActionStatusCode = 0;
-    MI_Result r = MI_RESULT_OK;
+    MI_Result result = MI_RESULT_OK;
     MI_Value value;
 
     if (g_metaConfig == NULL)
@@ -4587,105 +4587,106 @@ MI_Result ReportStatusToServer(
         assert(1);
         return MI_RESULT_FAILED;
     }
-    r = DSC_MI_Application_Initialize(0, NULL, NULL, &miApp);
-        if (r != MI_RESULT_OK)
-        {
-                return r;
-        }
 
-    r = RegisterWithReportingServers(lcmContext, (MI_Instance*)g_metaConfig, &extendedError);
-    if (r != MI_RESULT_OK)
+    result = DSC_MI_Application_Initialize(0, NULL, NULL, &miApp);
+    if (result != MI_RESULT_OK)
     {
-        MI_Application_Close(&miApp);
-        return r;
+        return result;
     }
 
-        r = DSC_MI_Application_NewInstance(&miApp, REPORTING_CLASS, NULL, &statusReport);
-        if (r != MI_RESULT_OK)
+    result = RegisterWithReportingServers(lcmContext, (MI_Instance*)g_metaConfig, &extendedError);
+    if (result != MI_RESULT_OK)
+    {
+        MI_Application_Close(&miApp);
+        return result;
+    }
+
+    result = DSC_MI_Application_NewInstance(&miApp, REPORTING_CLASS, NULL, &statusReport);
+    if (result != MI_RESULT_OK)
+    {
+        MI_Application_Close(&miApp);
+        return result;
+    }
+
+    if (instanceMIError && (isStatusReport == 0))
+    {
+        // Set error object
+        result = GetErrorForServer(lcmContext, &miApp, instanceMIError, errorMessage, errorSource, resourceId, errorCode, &errorObject);
+        if (result != MI_RESULT_OK)
         {
-                MI_Application_Close(&miApp);
-                return r;
-        }
-        if (instanceMIError && (isStatusReport == 0 ))
-        {
-                // Set error object
-                r = GetErrorForServer(lcmContext, &miApp, instanceMIError, errorMessage, errorSource, resourceId, errorCode, &errorObject);
-                if (r != MI_RESULT_OK)
-                {
-                        MI_Instance_Delete(statusReport);
-                        MI_Application_Close(&miApp);
-                        return r;
-                }
-                if (errorObject != NULL)
-                {
-                        value.instancea.size = 1;
-                        value.instancea.data = &errorObject;
-                        r = MI_Instance_AddElement(statusReport, REPORTING_ERRORREPORTNAME, &value, MI_INSTANCEA, 0);
-                }
-        }
-        else if (isStatusReport == 1)
-        {
-                // Set status object
-                r = GetStatusForServer(lcmContext, &miApp, &statusObject);
-                if (r != MI_RESULT_OK)
-                {
-                        MI_Instance_Delete(statusReport);
-                        MI_Application_Close(&miApp);
-                        return r;
-                }
-                if (statusObject != NULL)
-                {
-                        value.instancea.size = 1;
-                        value.instancea.data = &statusObject;
-                        r = MI_Instance_AddElement(statusReport, REPORTING_STATUSREPORTNAME, &value, MI_INSTANCEA, 0);
-                }
-        }
-        
-        
-        
-        if (!g_bNotFirstTimeReport)
-        {
-            // Set Report Format version
-            value.string = REPORTFORMAT_VERSION_1_0;
-            r = MI_Instance_AddElement(statusReport, REPORTING_REPORTFORMATVERSION, &value, MI_STRING, 0);
-            if (r != MI_RESULT_OK)
-            {
-                MI_Application_Close(&miApp);
-                MI_Instance_Delete(statusReport);
-                MI_Instance_Delete(errorObject);
-                MI_Instance_Delete(statusObject);
-                return r;
-            }
+            MI_Instance_Delete(statusReport);
+            MI_Application_Close(&miApp);
+            return result;
         }
 
-        // Set EndTime
-        if (bLastReport)
+        if (errorObject != NULL)
         {
-            PAL_Datetime time;
-            // fill start datetime property of configuration status
-            CPU_GetLocalTimestamp(&time);
-            value.datetime = PalDatetimeToMiDatetime(time);
-            r = MI_Instance_AddElement(statusReport, REPORTING_ENDTIME, &value, MI_DATETIME, 0);
-            if (r != MI_RESULT_OK)
-            {
-                MI_Application_Close(&miApp);
-                MI_Instance_Delete(statusReport);
-                MI_Instance_Delete(errorObject);
-                MI_Instance_Delete(statusObject);
-                return r;
-            }
+            value.instancea.size = 1;
+            value.instancea.data = &errorObject;
+            result = MI_Instance_AddElement(statusReport, REPORTING_ERRORREPORTNAME, &value, MI_INSTANCEA, 0);
         }
+    }
+    else if (isStatusReport == 1)
+    {
+        // Set status object
+        result = GetStatusForServer(lcmContext, &miApp, &statusObject);
+        if (result != MI_RESULT_OK)
+        {
+            MI_Instance_Delete(statusReport);
+            MI_Application_Close(&miApp);
+            return result;
+        }
+        if (statusObject != NULL)
+        {
+            value.instancea.size = 1;
+            value.instancea.data = &statusObject;
+            result = MI_Instance_AddElement(statusReport, REPORTING_STATUSREPORTNAME, &value, MI_INSTANCEA, 0);
+        }
+    }
+  
+    if (!g_bNotFirstTimeReport)
+    {
+        // Set Report Format version
+        value.string = REPORTFORMAT_VERSION_1_0;
+        result = MI_Instance_AddElement(statusReport, REPORTING_REPORTFORMATVERSION, &value, MI_STRING, 0);
+        if (result != MI_RESULT_OK)
+        {
+            MI_Application_Close(&miApp);
+            MI_Instance_Delete(statusReport);
+            MI_Instance_Delete(errorObject);
+            MI_Instance_Delete(statusObject);
+            return result;
+        }
+    }
+
+    // Set EndTime
+    if (bLastReport)
+    {
+        PAL_Datetime time;
+        // fill start datetime property of configuration status
+        CPU_GetLocalTimestamp(&time);
+        value.datetime = PalDatetimeToMiDatetime(time);
+        result = MI_Instance_AddElement(statusReport, REPORTING_ENDTIME, &value, MI_DATETIME, 0);
+        if (r != MI_RESULT_OK)
+        {
+            MI_Application_Close(&miApp);
+            MI_Instance_Delete(statusReport);
+            MI_Instance_Delete(errorObject);
+            MI_Instance_Delete(statusObject);
+            return result;
+        }
+    }
         
     // Set JobId
     value.string = g_ConfigurationDetails.jobGuidString;
-    r = MI_Instance_AddElement(statusReport, REPORTING_JOBID, &value, MI_STRING, 0);
-    if (r != MI_RESULT_OK)
+    result = MI_Instance_AddElement(statusReport, REPORTING_JOBID, &value, MI_STRING, 0);
+    if (result != MI_RESULT_OK)
     {
         MI_Application_Close(&miApp);
         MI_Instance_Delete(statusReport);
         MI_Instance_Delete(errorObject);
         MI_Instance_Delete(statusObject);
-        return r;
+        return result;
     }
     // Set OperationType
     // Set Configuration version
@@ -4696,131 +4697,130 @@ MI_Result ReportStatusToServer(
     // Set LCM Version
     // Send these values from ConfigurationStatus
 
-/*
+    /**********************/
+    if (lcmContext->configurationStatus.size >= 1)
     {
-        if (lcmContext->configurationStatus.size >= 1)
+        MSFT_DSCConfigurationStatus *configurationStatus = lcmContext->configurationStatus.data[0];
+        if (!lcmContext->bNotFirstTimeReport)
         {
-            MSFT_DSCConfigurationStatus *configurationStatus = lcmContext->configurationStatus.data[0];
-            if (!lcmContext->bNotFirstTimeReport)
+            // Set Start Time
+            if (configurationStatus->StartDate.exists)
             {
-                // Set Start Time
-                if (configurationStatus->StartDate.exists)
-                {
-                    value.datetime = configurationStatus->StartDate.value;
-                    r = MI_Instance_AddElement(statusReport, REPORTING_STARTTIME, &value, MI_DATETIME, 0);
-                    if (r != MI_RESULT_OK)
-                    {
-                        MI_Application_Close(&miApp);
-                        MI_Instance_Delete(statusReport);
-                        MI_Instance_Delete(errorObject);
-                        MI_Instance_Delete(statusObject);
-                        return r;
-                    }
-                }
-
-                // Set OperationType
-                if (configurationStatus->Type.exists)
-                {
-                    value.string = (MI_Char*)configurationStatus->Type.value;
-                    r = MI_Instance_AddElement(statusReport, REPORTING_OPERATIONTYPE, &value, MI_STRING, 0);
-                    if (r != MI_RESULT_OK)
-                    {
-                        MI_Application_Close(&miApp);
-                        MI_Instance_Delete(statusReport);
-                        MI_Instance_Delete(errorObject);
-                        MI_Instance_Delete(statusObject);
-                        return r;
-                    }
-                }
-                // Set NodeName
-                if (configurationStatus->HostName.exists)
-                {
-                    value.string = (MI_Char*)configurationStatus->HostName.value;
-                    r = MI_Instance_AddElement(statusReport, REPORTING_NODENAME, &value, MI_STRING, 0);
-                    if (r != MI_RESULT_OK)
-                    {
-                        MI_Application_Close(&miApp);
-                        MI_Instance_Delete(statusReport);
-                        MI_Instance_Delete(errorObject);
-                        MI_Instance_Delete(statusObject);
-                        return r;
-                    }
-                }
-                // Set Ipadress
-                if (configurationStatus->IPV4Addresses.exists || configurationStatus->IPV6Addresses.exists)
-                {
-                    r = SetIpAddress(configurationStatus, statusReport);
-                    if (r != MI_RESULT_OK)
-                    {
-                        MI_Application_Close(&miApp);
-                        MI_Instance_Delete(statusReport);
-                        MI_Instance_Delete(errorObject);
-                        MI_Instance_Delete(statusObject);
-                        return r;
-
-                    }
-                }
-                // Set LCM version
-                if (configurationStatus->LCMVersion.exists)
-                {
-                    value.string = (MI_Char*)configurationStatus->LCMVersion.value;
-                    r = MI_Instance_AddElement(statusReport, REPORTING_LCMVERSION, &value, MI_STRING, 0);
-                    if (r != MI_RESULT_OK)
-                    {
-                        MI_Application_Close(&miApp);
-                        MI_Instance_Delete(statusReport);
-                        MI_Instance_Delete(errorObject);
-                        MI_Instance_Delete(statusObject);
-                        return r;
-                    }
-                }
-                // Set Configuration version
-                if (lcmContext->documentMetaData.Version)
-                {
-                    value.string = (MI_Char*)lcmContext->documentMetaData.Version;
-                    r = MI_Instance_AddElement(statusReport, REPORTING_CONFIGURATIONVERSION, &value, MI_STRING, 0);
-                    if (r != MI_RESULT_OK)
-                    {
-                        MI_Application_Close(&miApp);
-                        MI_Instance_Delete(statusReport);
-                        MI_Instance_Delete(errorObject);
-                        MI_Instance_Delete(statusObject);
-                        return r;
-                    }
-                }
-            }
-            // Set Job Id
-            if (configurationStatus->JobID.exists)
-            {
-                value.string = (MI_Char*)configurationStatus->JobID.value;
-                // Already added above hence using SetElement
-                r = MI_Instance_SetElement(statusReport, REPORTING_JOBID, &value, MI_STRING, 0);
-                if (r != MI_RESULT_OK)
+                value.datetime = configurationStatus->StartDate.value;
+                result = MI_Instance_AddElement(statusReport, REPORTING_STARTTIME, &value, MI_DATETIME, 0);
+                if (result != MI_RESULT_OK)
                 {
                     MI_Application_Close(&miApp);
                     MI_Instance_Delete(statusReport);
                     MI_Instance_Delete(errorObject);
                     MI_Instance_Delete(statusObject);
-                    return r;
+                    return result;
                 }
             }
 
+            // Set OperationType
+            if (configurationStatus->Type.exists)
+            {
+                value.string = (MI_Char*)configurationStatus->Type.value;
+                result = MI_Instance_AddElement(statusReport, REPORTING_OPERATIONTYPE, &value, MI_STRING, 0);
+                if (result != MI_RESULT_OK)
+                {
+                    MI_Application_Close(&miApp);
+                    MI_Instance_Delete(statusReport);
+                    MI_Instance_Delete(errorObject);
+                    MI_Instance_Delete(statusObject);
+                    return result;
+                }
+            }
+            // Set NodeName
+            if (configurationStatus->HostName.exists)
+            {
+                value.string = (MI_Char*)configurationStatus->HostName.value;
+                result = MI_Instance_AddElement(statusReport, REPORTING_NODENAME, &value, MI_STRING, 0);
+                if (result != MI_RESULT_OK)
+                {
+                    MI_Application_Close(&miApp);
+                    MI_Instance_Delete(statusReport);
+                    MI_Instance_Delete(errorObject);
+                    MI_Instance_Delete(statusObject);
+                    return result;
+                }
+            }
+            // Set Ipadress
+            if (configurationStatus->IPV4Addresses.exists || configurationStatus->IPV6Addresses.exists)
+            {
+                result = SetIpAddress(configurationStatus, statusReport);
+                if (result != MI_RESULT_OK)
+                {
+                    MI_Application_Close(&miApp);
+                    MI_Instance_Delete(statusReport);
+                    MI_Instance_Delete(errorObject);
+                    MI_Instance_Delete(statusObject);
+                    return result;
+
+                }
+            }
+            // Set LCM version
+            if (configurationStatus->LCMVersion.exists)
+            {
+                value.string = (MI_Char*)configurationStatus->LCMVersion.value;
+                result = MI_Instance_AddElement(statusReport, REPORTING_LCMVERSION, &value, MI_STRING, 0);
+                if (result != MI_RESULT_OK)
+                {
+                    MI_Application_Close(&miApp);
+                    MI_Instance_Delete(statusReport);
+                    MI_Instance_Delete(errorObject);
+                    MI_Instance_Delete(statusObject);
+                    return result;
+                }
+            }
+            // Set Configuration version
+            if (lcmContext->documentMetaData.Version)
+            {
+                value.string = (MI_Char*)lcmContext->documentMetaData.Version;
+                result = MI_Instance_AddElement(statusReport, REPORTING_CONFIGURATIONVERSION, &value, MI_STRING, 0);
+                if (result != MI_RESULT_OK)
+                {
+                    MI_Application_Close(&miApp);
+                    MI_Instance_Delete(statusReport);
+                    MI_Instance_Delete(errorObject);
+                    MI_Instance_Delete(statusObject);
+                    return result;
+                }
+            }
+        }
+        // Set Job Id
+        if (configurationStatus->JobID.exists)
+        {
+            value.string = (MI_Char*)configurationStatus->JobID.value;
+            // Already added above hence using SetElement
+            r = MI_Instance_SetElement(statusReport, REPORTING_JOBID, &value, MI_STRING, 0);
+            if (r != MI_RESULT_OK)
+            {
+                MI_Application_Close(&miApp);
+                MI_Instance_Delete(statusReport);
+                MI_Instance_Delete(errorObject);
+                MI_Instance_Delete(statusObject);
+                return result;
+            }
         }
     }
-*/
+    /**********************/
 
     // Send it along.
+    result = Pull_SendStatusReport(lcmContext, (MI_Instance*)g_metaConfig, statusReport, isStatusReport, &getActionStatusCode, &extendedError);
 
-    r = Pull_SendStatusReport(lcmContext, (MI_Instance*)g_metaConfig, statusReport, isStatusReport, &getActionStatusCode, &extendedError);
     MI_Instance_Delete(statusReport);
     MI_Instance_Delete(errorObject);
     MI_Instance_Delete(statusObject);
     MI_Application_Close(&miApp);
 
     if (!g_bNotFirstTimeReport)
+    {
         g_bNotFirstTimeReport = MI_TRUE;
+    }
 
-    return r;
+    return result;
 }
 
 
@@ -4953,7 +4953,6 @@ void LCM_FinishOperation(
             {
                 MI_Utilities_CimErrorFromErrorCode((MI_Uint32)result, MI_RESULT_TYPE_MI, NULL, &cimError);
             }
-            ReportStatusToServer(lcmContext, errorMessage, REPORTING_TYPE_DSCENGINERESOURCE, REPORTING_TYPE_DSCENGINERESOURCE, errorCode, MI_FALSE, /*isStatusReport*/ 0, cimError);
 
             ReportStatusToServer(lcmContext, errorMessage, REPORTING_TYPE_DSCENGINERESOURCE, REPORTING_TYPE_DSCENGINERESOURCE, errorCode, MI_FALSE, /*isStatusReport*/ 0, cimError);
 
@@ -6703,35 +6702,84 @@ MI_Result TimeToRunConsistencyCheck(
 
 MI_Result SetLCMStatusBusy()
 {
-        MI_Uint32 lcmStatus;
-        MI_Instance *extendedError;
-        MI_Result r;
+    MI_Uint32 lcmStatus;
+    MI_Instance *extendedError;
+    MI_Result result;
+
+    MI_Application application = MI_APPLICATION_NULL;
+    MI_Boolean applicationInited = MI_FALSE;
+    MI_Instance *instance;
         
-        g_currentError[0] = '\0';
+    g_currentError[0] = '\0';
 
-        if (!g_LCMPendingReboot)
-        {
-                lcmStatus = LCM_STATUSCODE_BUSY;
-                r = UpdateCurrentStatus(NULL, NULL, &lcmStatus, NULL, &extendedError);
+    if (!g_LCMPendingReboot)
+    {
+        lcmStatus = LCM_STATUSCODE_BUSY;
+        result = UpdateCurrentStatus(NULL, NULL, &lcmStatus, NULL, &extendedError);
 #ifdef TEST_BUILD
-                NitsAssert(r == MI_RESULT_OK, "UpdateCurrentStatus should succeed");
+        NitsAssert(r == MI_RESULT_OK, "UpdateCurrentStatus should succeed");
 #endif
-                r = UpdateMetaConfigWithLCMState(&lcmStatus, (MI_Instance *)g_metaConfig);
+        result = UpdateMetaConfigWithLCMState(&lcmStatus, (MI_Instance *)g_metaConfig);
 #ifdef TEST_BUILD
-                NitsAssert(r == MI_RESULT_OK, "UpdateCurrentStatus should succeed");
+        NitsAssert(r == MI_RESULT_OK, "UpdateCurrentStatus should succeed");
 #endif
-        }
+    }
 
-        if (g_registrationManager != NULL && ((RegistrationManager*)g_registrationManager)->agentId != NULL)
+    if (g_registrationManager != NULL && ((RegistrationManager*)g_registrationManager)->agentId != NULL)
+    {
+        UpdateMetaConfigWithAgentId( ((RegistrationManager*)g_registrationManager)->agentId, (MI_Instance*)g_metaConfig);
+    }
+
+/****************************/
+// allocate memory for one configuration status instance
+    if ((lcmContext->configurationStatus.data = (MSFT_DSCConfigurationStatus **)DSC_malloc(sizeof(MSFT_DSCConfigurationStatus*), NitsHere())) == NULL)
+    {
+        result = MI_RESULT_SERVER_LIMITS_EXCEEDED;
+        GOTO_CLEANUP_AND_THROW_ERROR_IF_FAILED(lcmContext, result, result, ID_LCMHELPER_MEMORY_ERROR, &extendedError, Exit);
+    }
+
+    // initialize configuration status instance
+    result = MI_Application_Initialize(0, NULL, NULL, &application);
+    GOTO_CLEANUP_IF_FAILED(result, Exit);
+    applicationInited = MI_TRUE;
+
+    result = MI_Application_NewInstance(&application, (&MSFT_DSCConfigurationStatus_rtti)->name, &MSFT_DSCConfigurationStatus_rtti, &instance);
+    GOTO_CLEANUP_AND_THROW_ERROR_IF_FAILED(lcmContext, result, result, ID_LCMHELPER_MEMORY_ERROR, &extendedError, Exit);
+    lcmContext->configurationStatus.data[0] = (MSFT_DSCConfigurationStatus*)instance;
+    lcmContext->configurationStatus.size = 1;
+
+    // fill start date time property of configuration status
+    result = CPU_GetLocalTimestamp(&time);
+    MSFT_DSCConfigurationStatus_Set_StartDate(lcmContext->configurationStatus.data[0], PalDatetimeToMiDatetime(time));
+    MSFT_DSCConfigurationStatus_Set_JobID(lcmContext->configurationStatus.data[0], lcmContext->configurationDetails.jobGuidString);
+    MSFT_DSCConfigurationStatus_Set_HostName(lcmContext->configurationStatus.data[0], g_JobInformation.deviceName);
+    MSFT_DSCConfigurationStatus_Set_LCMVersion(lcmContext->configurationStatus.data[0], LCM_CURRENT_VERSION);
+
+    // fill type property of configuration status (initial, consistency, reboot, readonly)
+    MSFT_DSCConfigurationStatus_Set_Type(lcmContext->configurationStatus.data[0], operationType);
+/****************************/
+
+    ReportStatusToServer(NULL, NULL, NULL, NULL, 0, MI_FALSE, /*isStatusReport*/ 1, (MI_Instance*)NULL);
+
+Exit:
+    if (applicationInited)
+    {
+        MI_Application_Close(&application);
+        applicationInited = MI_FALSE;
+    }
+	if (result != MI_RESULT_OK)
+	{
+        if (lcmContext->configurationStatus.data != NULL)
         {
-            UpdateMetaConfigWithAgentId( ((RegistrationManager*)g_registrationManager)->agentId, (MI_Instance*)g_metaConfig);
+            DSC_free(lcmContext->configurationStatus.data);
+		    lcmContext->configurationStatus.data = NULL;
+		    lcmContext->configurationStatus.size = 0;
         }
-        
-        ReportStatusToServer(NULL, NULL, NULL, NULL, 0, MI_FALSE, /*isStatusReport*/ 1, (MI_Instance*)NULL);
+	}
 
-        // errors in above invocation are silently ignored since failure of updating status should not block other operations
-        r = MI_RESULT_OK;
-        return r;
+    // errors in above invocation are silently ignored since failure of updating status should not block other operations
+    result = MI_RESULT_OK;
+    return result;
 }
 
 MI_Result SetLCMStatusReady()

@@ -20,6 +20,7 @@
 #include "MSFT_DSCWebPullClient.h"
 #include "MSFT_DSCMetaConfiguration.h"
 #include "OMI_Error.h"
+#include "MSFT_DSCConfigurationStatus.h"
 
 /*
 **==============================================================================
@@ -6231,3 +6232,1122 @@ MI_Result MI_CALL MI_Server_GetSystemName(
     return __mi_server->serverFT->GetSystemName(systemName);
 }
 
+/*
+**==============================================================================
+**
+** MSFT_DSCConfigurationStatus
+**
+**==============================================================================
+*/
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_Status_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Status_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_Status_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_Status_Description_qual_value = MI_T("548");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Status_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_Status_Description_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_Status_ValueMap_qual_data_value[] =
+{
+    MI_T("Success"),
+    MI_T("Failure"),
+    MI_T("Aborted"),
+    MI_T("InProgress"),
+};
+
+static MI_CONST MI_ConstStringA MSFT_DSCConfigurationStatus_Status_ValueMap_qual_value =
+{
+    MSFT_DSCConfigurationStatus_Status_ValueMap_qual_data_value,
+    MI_COUNT(MSFT_DSCConfigurationStatus_Status_ValueMap_qual_data_value),
+};
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Status_ValueMap_qual =
+{
+    MI_T("ValueMap"),
+    MI_STRINGA,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_Status_ValueMap_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_Status_Values_qual_data_value[] =
+{
+    MI_T("549"),
+    MI_T("550"),
+    MI_T("551"),
+    MI_T("552"),
+};
+
+static MI_CONST MI_ConstStringA MSFT_DSCConfigurationStatus_Status_Values_qual_value =
+{
+    MSFT_DSCConfigurationStatus_Status_Values_qual_data_value,
+    MI_COUNT(MSFT_DSCConfigurationStatus_Status_Values_qual_data_value),
+};
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Status_Values_qual =
+{
+    MI_T("Values"),
+    MI_STRINGA,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_Status_Values_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_Status_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_Status_Read_qual,
+    &MSFT_DSCConfigurationStatus_Status_Description_qual,
+    &MSFT_DSCConfigurationStatus_Status_ValueMap_qual,
+    &MSFT_DSCConfigurationStatus_Status_Values_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.Status */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_Status_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x00737306, /* code */
+    MI_T("Status"), /* name */
+    MSFT_DSCConfigurationStatus_Status_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_Status_quals), /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, Status), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_Error_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Error_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_Error_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_Error_Description_qual_value = MI_T("598");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Error_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_Error_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_Error_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_Error_Read_qual,
+    &MSFT_DSCConfigurationStatus_Error_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.Error */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_Error_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x00657205, /* code */
+    MI_T("Error"), /* name */
+    MSFT_DSCConfigurationStatus_Error_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_Error_quals), /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, Error), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_StartDate_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_StartDate_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_StartDate_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_StartDate_Description_qual_value = MI_T("554");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_StartDate_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_StartDate_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_StartDate_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_StartDate_Read_qual,
+    &MSFT_DSCConfigurationStatus_StartDate_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.StartDate */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_StartDate_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x00736509, /* code */
+    MI_T("StartDate"), /* name */
+    MSFT_DSCConfigurationStatus_StartDate_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_StartDate_quals), /* numQualifiers */
+    MI_DATETIME, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, StartDate), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_DurationInSeconds_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_DurationInSeconds_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_DurationInSeconds_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_DurationInSeconds_Description_qual_value = MI_T("544");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_DurationInSeconds_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_DurationInSeconds_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_DurationInSeconds_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_DurationInSeconds_Read_qual,
+    &MSFT_DSCConfigurationStatus_DurationInSeconds_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.DurationInSeconds */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_DurationInSeconds_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x00647311, /* code */
+    MI_T("DurationInSeconds"), /* name */
+    MSFT_DSCConfigurationStatus_DurationInSeconds_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_DurationInSeconds_quals), /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, DurationInSeconds), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_RebootRequested_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_RebootRequested_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_RebootRequested_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_RebootRequested_Description_qual_value = MI_T("555");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_RebootRequested_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_RebootRequested_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_RebootRequested_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_RebootRequested_Read_qual,
+    &MSFT_DSCConfigurationStatus_RebootRequested_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.RebootRequested */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_RebootRequested_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x0072640F, /* code */
+    MI_T("RebootRequested"), /* name */
+    MSFT_DSCConfigurationStatus_RebootRequested_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_RebootRequested_quals), /* numQualifiers */
+    MI_BOOLEAN, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, RebootRequested), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_Type_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Type_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_Type_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_Type_Description_qual_value = MI_T("556");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Type_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_Type_Description_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_Type_ValueMap_qual_data_value[] =
+{
+    MI_T("Initial"),
+    MI_T("Consistency"),
+    MI_T("Reboot"),
+    MI_T("ReadOnly"),
+    MI_T("LocalConfigurationManager"),
+};
+
+static MI_CONST MI_ConstStringA MSFT_DSCConfigurationStatus_Type_ValueMap_qual_value =
+{
+    MSFT_DSCConfigurationStatus_Type_ValueMap_qual_data_value,
+    MI_COUNT(MSFT_DSCConfigurationStatus_Type_ValueMap_qual_data_value),
+};
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Type_ValueMap_qual =
+{
+    MI_T("ValueMap"),
+    MI_STRINGA,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_Type_ValueMap_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_Type_Values_qual_data_value[] =
+{
+    MI_T("557"),
+    MI_T("558"),
+    MI_T("559"),
+    MI_T("560"),
+    MI_T("865"),
+};
+
+static MI_CONST MI_ConstStringA MSFT_DSCConfigurationStatus_Type_Values_qual_value =
+{
+    MSFT_DSCConfigurationStatus_Type_Values_qual_data_value,
+    MI_COUNT(MSFT_DSCConfigurationStatus_Type_Values_qual_data_value),
+};
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Type_Values_qual =
+{
+    MI_T("Values"),
+    MI_STRINGA,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_Type_Values_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_Type_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_Type_Read_qual,
+    &MSFT_DSCConfigurationStatus_Type_Description_qual,
+    &MSFT_DSCConfigurationStatus_Type_ValueMap_qual,
+    &MSFT_DSCConfigurationStatus_Type_Values_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.Type */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_Type_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x00746504, /* code */
+    MI_T("Type"), /* name */
+    MSFT_DSCConfigurationStatus_Type_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_Type_quals), /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, Type), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_JobID_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_JobID_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_JobID_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_JobID_Description_qual_value = MI_T("561");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_JobID_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_JobID_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_JobID_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_JobID_Read_qual,
+    &MSFT_DSCConfigurationStatus_JobID_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.JobID */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_JobID_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x006A6405, /* code */
+    MI_T("JobID"), /* name */
+    MSFT_DSCConfigurationStatus_JobID_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_JobID_quals), /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, JobID), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_MetaData_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_MetaData_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_MetaData_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_MetaData_Description_qual_value = MI_T("562");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_MetaData_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_MetaData_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_MetaData_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_MetaData_Read_qual,
+    &MSFT_DSCConfigurationStatus_MetaData_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.MetaData */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_MetaData_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x006D6108, /* code */
+    MI_T("MetaData"), /* name */
+    MSFT_DSCConfigurationStatus_MetaData_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_MetaData_quals), /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, MetaData), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_NumberOfResources_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_NumberOfResources_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_NumberOfResources_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_NumberOfResources_Description_qual_value = MI_T("563");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_NumberOfResources_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_NumberOfResources_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_NumberOfResources_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_NumberOfResources_Read_qual,
+    &MSFT_DSCConfigurationStatus_NumberOfResources_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.NumberOfResources */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_NumberOfResources_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x006E7311, /* code */
+    MI_T("NumberOfResources"), /* name */
+    MSFT_DSCConfigurationStatus_NumberOfResources_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_NumberOfResources_quals), /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, NumberOfResources), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_Mode_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Mode_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_Mode_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_Mode_Description_qual_value = MI_T("564");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Mode_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_Mode_Description_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_Mode_ValueMap_qual_data_value[] =
+{
+    MI_T("Push"),
+    MI_T("Pull"),
+    MI_T("Disabled"),
+};
+
+static MI_CONST MI_ConstStringA MSFT_DSCConfigurationStatus_Mode_ValueMap_qual_value =
+{
+    MSFT_DSCConfigurationStatus_Mode_ValueMap_qual_data_value,
+    MI_COUNT(MSFT_DSCConfigurationStatus_Mode_ValueMap_qual_data_value),
+};
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Mode_ValueMap_qual =
+{
+    MI_T("ValueMap"),
+    MI_STRINGA,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_Mode_ValueMap_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_Mode_Values_qual_data_value[] =
+{
+    MI_T("411"),
+    MI_T("412"),
+    MI_T("413"),
+};
+
+static MI_CONST MI_ConstStringA MSFT_DSCConfigurationStatus_Mode_Values_qual_value =
+{
+    MSFT_DSCConfigurationStatus_Mode_Values_qual_data_value,
+    MI_COUNT(MSFT_DSCConfigurationStatus_Mode_Values_qual_data_value),
+};
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Mode_Values_qual =
+{
+    MI_T("Values"),
+    MI_STRINGA,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_Mode_Values_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_Mode_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_Mode_Read_qual,
+    &MSFT_DSCConfigurationStatus_Mode_Description_qual,
+    &MSFT_DSCConfigurationStatus_Mode_ValueMap_qual,
+    &MSFT_DSCConfigurationStatus_Mode_Values_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.Mode */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_Mode_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x006D6504, /* code */
+    MI_T("Mode"), /* name */
+    MSFT_DSCConfigurationStatus_Mode_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_Mode_quals), /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, Mode), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_LCMVersion_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_LCMVersion_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_LCMVersion_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_LCMVersion_Description_qual_value = MI_T("565");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_LCMVersion_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_LCMVersion_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_LCMVersion_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_LCMVersion_Read_qual,
+    &MSFT_DSCConfigurationStatus_LCMVersion_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.LCMVersion */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_LCMVersion_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x006C6E0A, /* code */
+    MI_T("LCMVersion"), /* name */
+    MSFT_DSCConfigurationStatus_LCMVersion_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_LCMVersion_quals), /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, LCMVersion), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_HostName_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_HostName_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_HostName_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_HostName_Description_qual_value = MI_T("566");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_HostName_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_HostName_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_HostName_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_HostName_Read_qual,
+    &MSFT_DSCConfigurationStatus_HostName_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.HostName */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_HostName_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x00686508, /* code */
+    MI_T("HostName"), /* name */
+    MSFT_DSCConfigurationStatus_HostName_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_HostName_quals), /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, HostName), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_IPV4Addresses_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_IPV4Addresses_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_IPV4Addresses_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_IPV4Addresses_Description_qual_value = MI_T("567");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_IPV4Addresses_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_IPV4Addresses_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_IPV4Addresses_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_IPV4Addresses_Read_qual,
+    &MSFT_DSCConfigurationStatus_IPV4Addresses_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.IPV4Addresses */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_IPV4Addresses_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x0069730D, /* code */
+    MI_T("IPV4Addresses"), /* name */
+    MSFT_DSCConfigurationStatus_IPV4Addresses_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_IPV4Addresses_quals), /* numQualifiers */
+    MI_STRINGA, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, IPV4Addresses), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_IPV6Addresses_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_IPV6Addresses_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_IPV6Addresses_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_IPV6Addresses_Description_qual_value = MI_T("567");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_IPV6Addresses_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_IPV6Addresses_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_IPV6Addresses_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_IPV6Addresses_Read_qual,
+    &MSFT_DSCConfigurationStatus_IPV6Addresses_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.IPV6Addresses */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_IPV6Addresses_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x0069730D, /* code */
+    MI_T("IPV6Addresses"), /* name */
+    MSFT_DSCConfigurationStatus_IPV6Addresses_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_IPV6Addresses_quals), /* numQualifiers */
+    MI_STRINGA, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, IPV6Addresses), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_MACAddresses_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_MACAddresses_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_MACAddresses_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_MACAddresses_Description_qual_value = MI_T("568");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_MACAddresses_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_MACAddresses_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_MACAddresses_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_MACAddresses_Read_qual,
+    &MSFT_DSCConfigurationStatus_MACAddresses_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.MACAddresses */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_MACAddresses_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x006D730C, /* code */
+    MI_T("MACAddresses"), /* name */
+    MSFT_DSCConfigurationStatus_MACAddresses_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_MACAddresses_quals), /* numQualifiers */
+    MI_STRINGA, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, MACAddresses), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_MetaConfiguration_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_MetaConfiguration_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_MetaConfiguration_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_MetaConfiguration_Description_qual_value = MI_T("569");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_MetaConfiguration_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_MetaConfiguration_Description_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_MetaConfiguration_EmbeddedInstance_qual_value = MI_T("MSFT_DSCMetaConfiguration");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_MetaConfiguration_EmbeddedInstance_qual =
+{
+    MI_T("EmbeddedInstance"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_MetaConfiguration_EmbeddedInstance_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_MetaConfiguration_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_MetaConfiguration_Read_qual,
+    &MSFT_DSCConfigurationStatus_MetaConfiguration_Description_qual,
+    &MSFT_DSCConfigurationStatus_MetaConfiguration_EmbeddedInstance_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.MetaConfiguration */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_MetaConfiguration_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x006D6E11, /* code */
+    MI_T("MetaConfiguration"), /* name */
+    MSFT_DSCConfigurationStatus_MetaConfiguration_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_MetaConfiguration_quals), /* numQualifiers */
+    MI_INSTANCE, /* type */
+    MI_T("MSFT_DSCMetaConfiguration"), /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, MetaConfiguration), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_ResourcesInDesiredState_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_ResourcesInDesiredState_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_ResourcesInDesiredState_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_ResourcesInDesiredState_Description_qual_value = MI_T("570");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_ResourcesInDesiredState_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_ResourcesInDesiredState_Description_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_ResourcesInDesiredState_EmbeddedInstance_qual_value = MI_T("MSFT_ResourceInDesiredState");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_ResourcesInDesiredState_EmbeddedInstance_qual =
+{
+    MI_T("EmbeddedInstance"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_ResourcesInDesiredState_EmbeddedInstance_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_ResourcesInDesiredState_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_ResourcesInDesiredState_Read_qual,
+    &MSFT_DSCConfigurationStatus_ResourcesInDesiredState_Description_qual,
+    &MSFT_DSCConfigurationStatus_ResourcesInDesiredState_EmbeddedInstance_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.ResourcesInDesiredState */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_ResourcesInDesiredState_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x00726517, /* code */
+    MI_T("ResourcesInDesiredState"), /* name */
+    MSFT_DSCConfigurationStatus_ResourcesInDesiredState_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_ResourcesInDesiredState_quals), /* numQualifiers */
+    MI_INSTANCEA, /* type */
+    MI_T("MSFT_ResourceInDesiredState"), /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, ResourcesInDesiredState), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_Description_qual_value = MI_T("571");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_Description_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_EmbeddedInstance_qual_value = MI_T("MSFT_ResourceNotInDesiredState");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_EmbeddedInstance_qual =
+{
+    MI_T("EmbeddedInstance"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_EmbeddedInstance_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_Read_qual,
+    &MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_Description_qual,
+    &MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_EmbeddedInstance_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.ResourcesNotInDesiredState */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x0072651A, /* code */
+    MI_T("ResourcesNotInDesiredState"), /* name */
+    MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_quals), /* numQualifiers */
+    MI_INSTANCEA, /* type */
+    MI_T("MSFT_ResourceNotInDesiredState"), /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, ResourcesNotInDesiredState), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_ResourcesChanged_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_ResourcesChanged_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_ResourcesChanged_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_ResourcesChanged_Description_qual_value = MI_T("876");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_ResourcesChanged_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_ResourcesChanged_Description_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_ResourcesChanged_EmbeddedInstance_qual_value = MI_T("MSFT_ResourceChanged");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_ResourcesChanged_EmbeddedInstance_qual =
+{
+    MI_T("EmbeddedInstance"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_ResourcesChanged_EmbeddedInstance_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_ResourcesChanged_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_ResourcesChanged_Read_qual,
+    &MSFT_DSCConfigurationStatus_ResourcesChanged_Description_qual,
+    &MSFT_DSCConfigurationStatus_ResourcesChanged_EmbeddedInstance_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.ResourcesChanged */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_ResourcesChanged_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x00726410, /* code */
+    MI_T("ResourcesChanged"), /* name */
+    MSFT_DSCConfigurationStatus_ResourcesChanged_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_ResourcesChanged_quals), /* numQualifiers */
+    MI_INSTANCEA, /* type */
+    MI_T("MSFT_ResourceChanged"), /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, ResourcesChanged), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Boolean MSFT_DSCConfigurationStatus_Locale_Read_qual_value = 1;
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Locale_Read_qual =
+{
+    MI_T("Read"),
+    MI_BOOLEAN,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS,
+    &MSFT_DSCConfigurationStatus_Locale_Read_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_Locale_Description_qual_value = MI_T("595");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Locale_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_Locale_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_Locale_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_Locale_Read_qual,
+    &MSFT_DSCConfigurationStatus_Locale_Description_qual,
+};
+
+/* property MSFT_DSCConfigurationStatus.Locale */
+static MI_CONST MI_PropertyDecl MSFT_DSCConfigurationStatus_Locale_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_READONLY, /* flags */
+    0x006C6506, /* code */
+    MI_T("Locale"), /* name */
+    MSFT_DSCConfigurationStatus_Locale_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_Locale_quals), /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(MSFT_DSCConfigurationStatus, Locale), /* offset */
+    MI_T("MSFT_DSCConfigurationStatus"), /* origin */
+    MI_T("MSFT_DSCConfigurationStatus"), /* propagator */
+    NULL,
+};
+
+static MI_PropertyDecl MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_props[] =
+{
+    &MSFT_DSCConfigurationStatus_Status_prop,
+    &MSFT_DSCConfigurationStatus_Error_prop,
+    &MSFT_DSCConfigurationStatus_StartDate_prop,
+    &MSFT_DSCConfigurationStatus_DurationInSeconds_prop,
+    &MSFT_DSCConfigurationStatus_RebootRequested_prop,
+    &MSFT_DSCConfigurationStatus_Type_prop,
+    &MSFT_DSCConfigurationStatus_JobID_prop,
+    &MSFT_DSCConfigurationStatus_MetaData_prop,
+    &MSFT_DSCConfigurationStatus_NumberOfResources_prop,
+    &MSFT_DSCConfigurationStatus_Mode_prop,
+    &MSFT_DSCConfigurationStatus_LCMVersion_prop,
+    &MSFT_DSCConfigurationStatus_HostName_prop,
+    &MSFT_DSCConfigurationStatus_IPV4Addresses_prop,
+    &MSFT_DSCConfigurationStatus_IPV6Addresses_prop,
+    &MSFT_DSCConfigurationStatus_MACAddresses_prop,
+    &MSFT_DSCConfigurationStatus_MetaConfiguration_prop,
+    &MSFT_DSCConfigurationStatus_ResourcesInDesiredState_prop,
+    &MSFT_DSCConfigurationStatus_ResourcesNotInDesiredState_prop,
+    &MSFT_DSCConfigurationStatus_ResourcesChanged_prop,
+    &MSFT_DSCConfigurationStatus_Locale_prop,
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_ClassVersion_qual_value = MI_T("1.0.0");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_ClassVersion_qual =
+{
+    MI_T("ClassVersion"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_RESTRICTED,
+    &MSFT_DSCConfigurationStatus_ClassVersion_qual_value
+};
+
+static MI_CONST MI_Char* MSFT_DSCConfigurationStatus_Description_qual_value = MI_T("572");
+
+static MI_CONST MI_Qualifier MSFT_DSCConfigurationStatus_Description_qual =
+{
+    MI_T("Description"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TOSUBCLASS|MI_FLAG_TRANSLATABLE,
+    &MSFT_DSCConfigurationStatus_Description_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST MSFT_DSCConfigurationStatus_quals[] =
+{
+    &MSFT_DSCConfigurationStatus_ClassVersion_qual,
+    &MSFT_DSCConfigurationStatus_Description_qual,
+};
+
+/* class MSFT_DSCConfigurationStatus */
+MI_CONST MI_ClassDecl MSFT_DSCConfigurationStatus_rtti =
+{
+    MI_FLAG_CLASS, /* flags */
+    0x006D731B, /* code */
+    MI_T("MSFT_DSCConfigurationStatus"), /* name */
+    MSFT_DSCConfigurationStatus_quals, /* qualifiers */
+    MI_COUNT(MSFT_DSCConfigurationStatus_quals), /* numQualifiers */
+    MSFT_DSCConfigurationStatus_props, /* properties */
+    MI_COUNT(MSFT_DSCConfigurationStatus_props), /* numProperties */
+    sizeof(MSFT_DSCConfigurationStatus), /* size */
+    NULL, /* superClass */
+    NULL, /* superClassDecl */
+    NULL, /* methods */
+    0, /* numMethods */
+    &schemaDecl, /* schema */
+    NULL, /* functions */
+    NULL /* owningClass */
+};
