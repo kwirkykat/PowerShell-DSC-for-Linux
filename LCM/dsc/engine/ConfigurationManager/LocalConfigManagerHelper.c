@@ -2033,14 +2033,6 @@ Cleanup:
                     moduleManager->ft->Close(moduleManager, NULL);
                     return result;
                 }
-
-                result = File_RemoveT(GetCurrentConfigFileName());
-                if (result != MI_RESULT_OK)
-                {
-                    MI_Instance_Delete((MI_Instance *)metaConfigInstance);            
-                    moduleManager->ft->Close(moduleManager, NULL);
-                    return GetCimMIError1Param(result, cimErrorDetails, ID_LCMHELPER_DEL_FAILED, GetCurrentConfigFileName());
-                }
             }
 
             // If Pending.mof exists, throw an error if Force was not specified
