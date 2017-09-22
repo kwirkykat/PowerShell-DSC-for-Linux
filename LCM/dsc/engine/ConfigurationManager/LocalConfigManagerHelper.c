@@ -31,14 +31,6 @@
 #include "MSFT_WebDownloadManager.h"
 #include "RegistrationManager.h"
 
-#if defined(_MSC_VER)
-#include "Win32_LocalConfigManagerHelper.h"
-#include <WinCrypt.h>
-#else
-#include "OMI_LocalConfigManagerHelper.h"
-#endif
-
-
 #define NOT_INITIALIZED         0
 #define INITIALIZED             1
 #define RUNNING_INITIALIZATION  2
@@ -96,27 +88,7 @@ MI_Result RetryDeleteFile(
         BOOL fResult = File_RemoveT(filePath);
         if (fResult)
         {
-#if defined(_MSC_VER)
-            DWORD lastError;
-            LPTSTR errorMessage = NULL;
-            lastError = GetLastError();
-
-            FormatMessage(
-                FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM ,       //dwFlags
-                NULL,                                                               //lpSource
-                lastError,                                                          //dwMessageId
-                0,                                                                  //dwLanguageId. See msdn for details
-                (LPTSTR) &errorMessage,                                             //lpBuffer
-                0,                                                                  //nSize. Not needed if we ask the API to allocate the memory
-                NULL                                                                //Arguments
-                );
-
-            DSC_EventWriteDeleteFileFailed(xCount,filePath, lastError, errorMessage);
-            LocalFree(errorMessage);
-#else
             DSC_EventWriteDeleteFileFailed(xCount,filePath, -1, NULL);
-#endif
-
             Sleep_Milliseconds(RETRY_LOOP_SLEEP);
             continue;
         }
@@ -140,28 +112,7 @@ MI_Result RegisterStandardTasks(_Outptr_result_maybenull_ MI_Instance **cimError
     }
     *cimErrorDetails = NULL;    // Explicitly set *cimErrorDetails to NULL as _Outptr_ requires setting this at least once. 
 
-#if defined(_MSC_VER)
-    result = RegisterStartAtBootTask(MI_TRUE, cimErrorDetails);
-
-    if (result == MI_RESULT_OK)
-    {
-        // SetMetaConfig has a side-effect of changing the passed in values based on the default min
-        // values. That makes it necessary to retrieve the current cached value which was updated in
-        // SetMetaConfig during the set operation.
-        result = GetMetaConfig((MSFT_DSCMetaConfiguration **)&currentMetaConfigInstance);
-        if (result != MI_RESULT_OK)
-        {
-            return result;
-        }
-
-        result = RegisterConsistencyTask(currentMetaConfigInstance, cimErrorDetails);
-
-        MI_Instance_Delete(currentMetaConfigInstance);
-    }
-
-    return result;
-#else
-        result = GetMetaConfig((MSFT_DSCMetaConfiguration **)&currentMetaConfigInstance);
+    result = GetMetaConfig((MSFT_DSCMetaConfiguration **)&currentMetaConfigInstance);
     if (result != MI_RESULT_OK)
     {
         return result;
@@ -172,7 +123,6 @@ MI_Result RegisterStandardTasks(_Outptr_result_maybenull_ MI_Instance **cimError
         MI_Instance_Delete(currentMetaConfigInstance);
 
     return result;
-#endif
 }
 
 MI_Result DoPushDependencyCheck(
@@ -4563,6 +4513,34 @@ MI_Result GetStatusForServer(
     return MI_RESULT_OK;
 }
 
+MI_Result SetIpAddress(_In_ MSFT_DSCConfigurationStatus *configurationStatus, _Inout_ MI_Instance *statusReport)
+{
+    MI_Result result = MI_RESULT_OK;
+    MI_Char *ipAddress = NULL;
+    MI_Uint32 ipV4Count = 0;
+    MI_Uint32 ipV6Count = 0;
+    MI_Value value;
+    if (configurationStatus->IPV4Addresses.exists)
+    {
+        ipV4Count = configurationStatus->IPV4Addresses.value.size;
+    }
+    if (configurationStatus->IPV6Addresses.exists)
+    {
+        ipV6Count = configurationStatus->IPV6Addresses.value.size;
+    }
+
+    result = GetIpAddressesInStringFormat((MI_Char**)configurationStatus->IPV4Addresses.value.data, ipV4Count, (MI_Char**)configurationStatus->IPV6Addresses.value.data, ipV6Count, &ipAddress);
+    if (result != MI_RESULT_OK)
+    {
+       return result;
+    }
+    value.string = ipAddress;
+    result = MI_Instance_AddElement(statusReport, REPORTING_IPADDRESS, &value, MI_STRING, 0);
+
+    DSC_free(ipAddress);
+    return result;
+}
+
 MI_Result ReportStatusToServer(
         _In_ LCMProviderContext *lcmContext,
         _In_opt_z_ const MI_Char * errorMessage,
@@ -6711,6 +6689,9 @@ MI_Result SetLCMStatusBusy()
     MI_Application application = MI_APPLICATION_NULL;
     MI_Boolean applicationInited = MI_FALSE;
     MI_Instance *instance;
+
+    LCMProviderContext lcmProviderContext = {0};
+    LCMProviderContext *lcmContext = &lcmProviderContext;
         
     g_currentError[0] = '\0';
 
@@ -6737,7 +6718,7 @@ MI_Result SetLCMStatusBusy()
     if ((lcmContext->configurationStatus.data = (MSFT_DSCConfigurationStatus **)DSC_malloc(sizeof(MSFT_DSCConfigurationStatus*), NitsHere())) == NULL)
     {
         result = MI_RESULT_SERVER_LIMITS_EXCEEDED;
-        GOTO_CLEANUP_AND_THROW_ERROR_IF_FAILED(lcmContext, result, result, ID_LCMHELPER_MEMORY_ERROR, &extendedError, Exit);
+        GOTO_CLEANUP_AND_THROW_ERROR_IF_FAILED(result, result, ID_LCMHELPER_MEMORY_ERROR, &extendedError, Exit);
     }
 
     // initialize configuration status instance
@@ -6746,19 +6727,20 @@ MI_Result SetLCMStatusBusy()
     applicationInited = MI_TRUE;
 
     result = MI_Application_NewInstance(&application, (&MSFT_DSCConfigurationStatus_rtti)->name, &MSFT_DSCConfigurationStatus_rtti, &instance);
-    GOTO_CLEANUP_AND_THROW_ERROR_IF_FAILED(lcmContext, result, result, ID_LCMHELPER_MEMORY_ERROR, &extendedError, Exit);
+    GOTO_CLEANUP_AND_THROW_ERROR_IF_FAILED(result, result, ID_LCMHELPER_MEMORY_ERROR, &extendedError, Exit);
     lcmContext->configurationStatus.data[0] = (MSFT_DSCConfigurationStatus*)instance;
     lcmContext->configurationStatus.size = 1;
 
     // fill start date time property of configuration status
+    PAL_Datetime time;
     result = CPU_GetLocalTimestamp(&time);
     MSFT_DSCConfigurationStatus_Set_StartDate(lcmContext->configurationStatus.data[0], PalDatetimeToMiDatetime(time));
-    MSFT_DSCConfigurationStatus_Set_JobID(lcmContext->configurationStatus.data[0], lcmContext->configurationDetails.jobGuidString);
     MSFT_DSCConfigurationStatus_Set_HostName(lcmContext->configurationStatus.data[0], g_JobInformation.deviceName);
     MSFT_DSCConfigurationStatus_Set_LCMVersion(lcmContext->configurationStatus.data[0], LCM_CURRENT_VERSION);
 
+    // TODO: operation type should be passed into this function
     // fill type property of configuration status (initial, consistency, reboot, readonly)
-    MSFT_DSCConfigurationStatus_Set_Type(lcmContext->configurationStatus.data[0], operationType);
+    // MSFT_DSCConfigurationStatus_Set_Type(lcmContext->configurationStatus.data[0], operationType);
 /****************************/
 
     ReportStatusToServer(NULL, NULL, NULL, NULL, 0, MI_FALSE, /*isStatusReport*/ 1, (MI_Instance*)NULL);

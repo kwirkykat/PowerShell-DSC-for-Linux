@@ -218,7 +218,7 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_SendConfigurationApply_Internal(void *p
 
     GetRealBufferIndex( &args->data, &bufferIndex);
 
-    start=CPU_GetTimeStamp();
+    start = CPU_GetTimeStamp();
     SetLCMStatusBusy();
     miResult = CallSetConfiguration(args->data.data + bufferIndex, 
         args->data.size - bufferIndex, args->flag, 

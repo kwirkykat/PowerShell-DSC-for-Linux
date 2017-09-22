@@ -90,6 +90,9 @@
 /* unwind block */
 #define EH_UNWIND _eh_unwind
 
+/* LCM Version Information */
+#define LCM_VERSION_2_0						MI_T("2.0")
+#define LCM_CURRENT_VERSION					LCM_VERSION_2_0
 
 #define SEARCH_PATTERN_DIRECTORY            MI_T("*")
 #define SEARCH_PATTERN_SCHEMA               MI_T(".schema.mof")
@@ -909,6 +912,13 @@ MI_Result GetAgentInformation(
     _Inout_ MI_Instance** registrationPayload);
 
 MI_Result UpdateMetaConfigWithAgentId(_In_z_ MI_Char *agentId, _Inout_ MI_Instance *metaConfigInstance);
+
+MI_Result GetIpAddressesInStringFormat(
+    MI_Char* ipV4Addresses[],
+    _In_ MI_Uint32 ipV4Count, 
+    MI_Char* ipV6Addresses[],
+    _In_ MI_Uint32 ipV6Count, 
+    _Outptr_result_maybenull_z_ MI_Char** ipAddress);
 
 MI_Result ShouldUseV1Protocol(
     _Inout_ MI_Boolean* isV1MetaConfig);

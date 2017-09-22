@@ -419,11 +419,11 @@ extern "C"
         _Inout_ MI_Serializer *pSerializer);
 
 
-        MI_Result SetLCMStatusBusy();
-        
-        MI_Result SetLCMStatusReady();
-        
-        MI_Result SetLCMStatusReboot();
+    MI_Result SetLCMStatusBusy();
+    
+    MI_Result SetLCMStatusReady();
+    
+    MI_Result SetLCMStatusReboot();
 
 
     MI_Result DeleteRegistrationKeyFromManagerInstance(

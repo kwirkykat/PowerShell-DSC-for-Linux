@@ -1149,6 +1149,62 @@ MI_Result UpdateMetaConfigWithAgentId(
     return MI_RESULT_OK;
 }
 
+MI_Result GetIpAddressesInStringFormat(MI_Char* ipV4Addresses[], _In_ MI_Uint32 ipV4Count, MI_Char* ipV6Addresses[], _In_ MI_Uint32 ipV6Count, _Outptr_result_maybenull_z_ MI_Char** ipAddress)
+{
+	MI_Result result = MI_RESULT_OK;
+	MI_Boolean bFirstItem = MI_TRUE;
+	MI_Uint32 xCount = 0;
+	MI_Char* ipAddress2 = (MI_Char *)DSC_malloc(MAX_PATH * sizeof(MI_Char), NitsHere());
+	if (ipAddress2 == NULL)
+	{
+		result = MI_RESULT_SERVER_LIMITS_EXCEEDED;
+		EH_CheckResult(result);
+	}
+
+	for (xCount = 0; xCount < ipV4Count; xCount++)
+	{
+		if (bFirstItem)
+		{
+			bFirstItem = MI_FALSE;
+		}
+		else
+		{
+			ipAddress2 = Tcscat(ipAddress2, MAX_PATH, MI_T(";"));
+			EH_Check_(ipAddress2 != NULL, result = MI_RESULT_SERVER_LIMITS_EXCEEDED);
+			result = MI_RESULT_OK;
+		}
+
+		ipAddress2 = Tcscat(ipAddress2, MAX_PATH, ipV4Addresses[xCount]);
+		EH_Check_(ipAddress2 != NULL, result = MI_RESULT_SERVER_LIMITS_EXCEEDED);
+		result = MI_RESULT_OK;
+	}
+
+	for (xCount = 0; xCount < ipV6Count; xCount++)
+	{
+		if (bFirstItem)
+		{
+			bFirstItem = MI_FALSE;
+		}
+		else
+		{
+			ipAddress2 = Tcscat(ipAddress2, MAX_PATH, MI_T(";"));
+			EH_Check_(ipAddress2 != NULL, result = MI_RESULT_SERVER_LIMITS_EXCEEDED);
+			result = MI_RESULT_OK;
+		}
+		ipAddress2 = Tcscat(ipAddress2, MAX_PATH, ipV6Addresses[xCount]);
+		EH_Check_(ipAddress2 != NULL, result = MI_RESULT_SERVER_LIMITS_EXCEEDED);
+		result = MI_RESULT_OK;
+	}
+	*ipAddress = ipAddress2;
+
+EH_UNWIND:
+		if (result != MI_RESULT_OK && ipAddress2 != NULL)
+		{
+			DSC_free(ipAddress2);
+			ipAddress2 = NULL;
+		}
+	return result;
+}
 
 MI_Result StripBracesFromGuid(
     _In_z_ MI_Char* inputGuid,
