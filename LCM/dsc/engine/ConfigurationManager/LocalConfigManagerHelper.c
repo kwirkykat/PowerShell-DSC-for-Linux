@@ -834,7 +834,7 @@ MI_Result CallSetConfiguration(
     r = GetMetaConfig(&metaConfigInstance);
     EH_CheckResult(r);
 
-    r = DSC_MI_Instance_GetElement(metaConfigInstance, MSFT_DSCMetaConfiguration_ConfigurationMode, &configModeValue, NULL, &flags, NULL);
+    r = DSC_MI_Instance_GetElement(metaConfigInstance, MSFT_DSCMetaConfiguration_ConfigurationMode, &configModeValue, NULL, NULL_STR, NULL);
     EH_CheckResult(r);
 
     // We tell user that LCM is running in MonitorOnly mode and will be testing only
