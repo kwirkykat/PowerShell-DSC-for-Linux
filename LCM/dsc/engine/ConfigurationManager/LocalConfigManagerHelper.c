@@ -4695,7 +4695,7 @@ MI_Result ReportStatusToServer(
                     return result;
                 }
             }
-
+            /*
             // Set OperationType
             if (configurationStatus->Type.exists)
             {
@@ -4709,7 +4709,7 @@ MI_Result ReportStatusToServer(
                     MI_Instance_Delete(statusObject);
                     return result;
                 }
-            }
+            }*/
             // Set NodeName
             if (configurationStatus->HostName.exists)
             {
@@ -4724,6 +4724,7 @@ MI_Result ReportStatusToServer(
                     return result;
                 }
             }
+            /*
             // Set Ipadress
             if (configurationStatus->IPV4Addresses.exists || configurationStatus->IPV6Addresses.exists)
             {
@@ -4737,7 +4738,7 @@ MI_Result ReportStatusToServer(
                     return result;
 
                 }
-            }
+            }*/
             // Set LCM version
             if (configurationStatus->LCMVersion.exists)
             {
@@ -4752,6 +4753,7 @@ MI_Result ReportStatusToServer(
                     return result;
                 }
             }
+            /*
             // Set Configuration version
             if (lcmContext->documentMetaData.Version)
             {
@@ -4766,6 +4768,7 @@ MI_Result ReportStatusToServer(
                     return result;
                 }
             }
+            */
         }
         /*
         // Set Job Id
