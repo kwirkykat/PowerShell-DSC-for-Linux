@@ -4627,14 +4627,7 @@ MI_Result ReportStatusToServer(
         // Set Report Format version
         value.string = REPORTFORMAT_VERSION_1_0;
         result = MI_Instance_AddElement(statusReport, REPORTING_REPORTFORMATVERSION, &value, MI_STRING, 0);
-        if (result != MI_RESULT_OK)
-        {
-            MI_Application_Close(&miApp);
-            MI_Instance_Delete(statusReport);
-            MI_Instance_Delete(errorObject);
-            MI_Instance_Delete(statusObject);
-            return result;
-        }
+        EH_CheckResult(result);
     }
 
     // Set EndTime
@@ -4645,27 +4638,14 @@ MI_Result ReportStatusToServer(
         CPU_GetLocalTimestamp(&time);
         value.datetime = PalDatetimeToMiDatetime(time);
         result = MI_Instance_AddElement(statusReport, REPORTING_ENDTIME, &value, MI_DATETIME, 0);
-        if (result != MI_RESULT_OK)
-        {
-            MI_Application_Close(&miApp);
-            MI_Instance_Delete(statusReport);
-            MI_Instance_Delete(errorObject);
-            MI_Instance_Delete(statusObject);
-            return result;
-        }
+        EH_CheckResult(result);
     }
         
     // Set JobId
     value.string = g_ConfigurationDetails.jobGuidString;
     result = MI_Instance_AddElement(statusReport, REPORTING_JOBID, &value, MI_STRING, 0);
-    if (result != MI_RESULT_OK)
-    {
-        MI_Application_Close(&miApp);
-        MI_Instance_Delete(statusReport);
-        MI_Instance_Delete(errorObject);
-        MI_Instance_Delete(statusObject);
-        return result;
-    }
+    EH_CheckResult(result);
+
     // Set OperationType
     // Set Configuration version
     // Set Start Time
@@ -4793,15 +4773,16 @@ MI_Result ReportStatusToServer(
     // Send it along.
     result = Pull_SendStatusReport(lcmContext, (MI_Instance*)g_metaConfig, statusReport, isStatusReport, &getActionStatusCode, &extendedError);
 
-    MI_Instance_Delete(statusReport);
-    MI_Instance_Delete(errorObject);
-    MI_Instance_Delete(statusObject);
-    MI_Application_Close(&miApp);
-
     if (!g_bNotFirstTimeReport)
     {
         g_bNotFirstTimeReport = MI_TRUE;
     }
+
+EH_UNWIND:
+    MI_Instance_Delete(statusReport);
+    MI_Instance_Delete(errorObject);
+    MI_Instance_Delete(statusObject);
+    MI_Application_Close(&miApp);
 
     return result;
 }
@@ -4937,7 +4918,7 @@ void LCM_FinishOperation(
                 MI_Utilities_CimErrorFromErrorCode((MI_Uint32)result, MI_RESULT_TYPE_MI, NULL, &cimError);
             }
 
-            ReportStatusToServer(lcmContext, errorMessage, REPORTING_TYPE_DSCENGINERESOURCE, REPORTING_TYPE_DSCENGINERESOURCE, errorCode, MI_FALSE, /*isStatusReport*/ 0, cimError);
+            //ReportStatusToServer(lcmContext, errorMessage, REPORTING_TYPE_DSCENGINERESOURCE, REPORTING_TYPE_DSCENGINERESOURCE, errorCode, MI_FALSE, /*isStatusReport*/ 0, cimError);
 
             if (errorDetails != cimError && cimError != NULL)
             {
@@ -6731,22 +6712,31 @@ MI_Result SetLCMStatusBusy()
 
     result = MI_Application_NewInstance(&application, (&MSFT_DSCConfigurationStatus_rtti)->name, &MSFT_DSCConfigurationStatus_rtti, &instance);
     GOTO_CLEANUP_AND_THROW_ERROR_IF_FAILED(result, result, ID_LCMHELPER_MEMORY_ERROR, &extendedError, Exit);
+    
     lcmContext->configurationStatus.data[0] = (MSFT_DSCConfigurationStatus*)instance;
     lcmContext->configurationStatus.size = 1;
 
     // fill start date time property of configuration status
     PAL_Datetime time;
     result = CPU_GetLocalTimestamp(&time);
-    MSFT_DSCConfigurationStatus_Set_StartDate(lcmContext->configurationStatus.data[0], PalDatetimeToMiDatetime(time));
-    MSFT_DSCConfigurationStatus_Set_HostName(lcmContext->configurationStatus.data[0], g_JobInformation.deviceName);
-    MSFT_DSCConfigurationStatus_Set_LCMVersion(lcmContext->configurationStatus.data[0], LCM_CURRENT_VERSION);
+    GOTO_CLEANUP_IF_FAILED(result, Exit);
+
+    result = MSFT_DSCConfigurationStatus_Set_StartDate(lcmContext->configurationStatus.data[0], PalDatetimeToMiDatetime(time));
+    GOTO_CLEANUP_IF_FAILED(result, Exit);
+
+    result = MSFT_DSCConfigurationStatus_Set_HostName(lcmContext->configurationStatus.data[0], g_JobInformation.deviceName);
+    GOTO_CLEANUP_IF_FAILED(result, Exit);
+
+    result = MSFT_DSCConfigurationStatus_Set_LCMVersion(lcmContext->configurationStatus.data[0], LCM_CURRENT_VERSION);
+    GOTO_CLEANUP_IF_FAILED(result, Exit);
 
     // TODO: operation type should be passed into this function
     // fill type property of configuration status (initial, consistency, reboot, readonly)
     // MSFT_DSCConfigurationStatus_Set_Type(lcmContext->configurationStatus.data[0], operationType);
 /****************************/
 
-    ReportStatusToServer(NULL, NULL, NULL, NULL, 0, MI_FALSE, /*isStatusReport*/ 1, (MI_Instance*)NULL);
+    result = ReportStatusToServer(lcmContext, NULL, NULL, NULL, 0, MI_FALSE, /*isStatusReport*/ 1, (MI_Instance*)NULL);
+    GOTO_CLEANUP_IF_FAILED(result, Exit);
 
 Exit:
     if (applicationInited)
@@ -6754,6 +6744,7 @@ Exit:
         MI_Application_Close(&application);
         applicationInited = MI_FALSE;
     }
+
 	if (result != MI_RESULT_OK)
 	{
         if (lcmContext->configurationStatus.data != NULL)
@@ -6765,7 +6756,7 @@ Exit:
 	}
 
     // errors in above invocation are silently ignored since failure of updating status should not block other operations
-    result = MI_RESULT_OK;
+    //result = MI_RESULT_OK;
     return result;
 }
 
@@ -6788,7 +6779,7 @@ MI_Result SetLCMStatusReady()
 #endif
         }
 
-        ReportStatusToServer(NULL, NULL, NULL, NULL, 0, MI_TRUE, /*isStatusReport*/ 1, (MI_Instance*)NULL);
+        //ReportStatusToServer(NULL, NULL, NULL, NULL, 0, MI_TRUE, /*isStatusReport*/ 1, (MI_Instance*)NULL);
 
         // errors in above invocation are silently ignored since failure of updating status should not block other operations
         r = MI_RESULT_OK;
