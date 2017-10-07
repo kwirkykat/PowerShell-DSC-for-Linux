@@ -2760,15 +2760,15 @@ MI_Result Pull_Register(MI_Char* serverURL,
 
 extern MI_Char* RunCommand(const MI_Char* command);
 
-MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext, 
-                                                      _In_ MI_Instance *metaConfig,
-                                                      _In_ MI_Instance *statusReport,
-                                                      _In_ MI_Uint32 isStatusReport,
-                                                      _Out_ MI_Uint32* getActionStatusCode,
-                                                      _Outptr_result_maybenull_ MI_Instance **extendedError)
+MI_Result MI_CALL Pull_SendStatusReport(
+    _In_ LCMProviderContext *lcmContext, 
+    _In_ MI_Instance *metaConfig,
+    _In_ MI_Instance *statusReport,
+    _In_ MI_Uint32 isStatusReport,
+    _Out_ MI_Uint32* getActionStatusCode,
+    _Outptr_result_maybenull_ MI_Instance **extendedError)
 {
-    
-    MI_Result r = MI_RESULT_OK;
+    MI_Result result = MI_RESULT_OK;
     const char *emptyString = "";
     MI_Char actionUrl[MAX_URL_LENGTH];
     char dataBuffer[10000];
@@ -2777,7 +2777,7 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
     long responseCode;
     
     CURL *curl;
-    CURLcode res;
+    CURLcode curlResult;
     struct Chunk headerChunk;
     struct Chunk dataChunk;
     struct curl_slist *list = NULL;
@@ -2792,20 +2792,20 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
     const char* reportText;
     int bAtLeastOneReportSuccess = 0;
 
-    r = DSC_MI_Instance_GetElement(metaConfig, MSFT_DSCMetaConfiguration_ReportManagers, &managerInstances, NULL, &flags, NULL);
-    if (r != MI_RESULT_OK || (flags & MI_FLAG_NULL))
+    result = DSC_MI_Instance_GetElement(metaConfig, MSFT_DSCMetaConfiguration_ReportManagers, &managerInstances, NULL, &flags, NULL);
+    if (result != MI_RESULT_OK || (flags & MI_FLAG_NULL))
     {
         // Unable to find report managers, don't report
         return MI_RESULT_OK;
     }
 
-    r = GetSSLOptions(extendedError);
-    if( r != MI_RESULT_OK)
+    result = GetSSLOptions(extendedError);
+    if (result != MI_RESULT_OK)
     {
-        return r;
+        return result;
     }
 
-    r = DSC_MI_Instance_GetElement(metaConfig, "AgentId", &agentId, NULL, NULL, NULL);
+    result = DSC_MI_Instance_GetElement(metaConfig, "AgentId", &agentId, NULL, NULL, NULL);
 
     list = curl_slist_append(list, "Accept: application/json");
     list = curl_slist_append(list, "Content-Type: application/json; charset=utf-8");
@@ -2813,10 +2813,10 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
 
     for (i = 0; i < managerInstances.stringa.size; ++i)
     {
-        r = MI_Instance_GetElement((MI_Instance*)managerInstances.stringa.data[i], MSFT_ServerURL_Name, &serverURL, NULL, NULL, NULL);
+        result = MI_Instance_GetElement((MI_Instance*)managerInstances.stringa.data[i], MSFT_ServerURL_Name, &serverURL, NULL, NULL, NULL);
 
-        r = MI_Instance_GetElement(statusReport, REPORTING_ENDTIME, &endTime, NULL, &flags, 0);
-        if (r != MI_RESULT_OK || (flags & MI_FLAG_NULL) || (endTime.datetime.u.timestamp.year == 0))
+        result = MI_Instance_GetElement(statusReport, REPORTING_ENDTIME, &endTime, NULL, &flags, 0);
+        if (result != MI_RESULT_OK || (flags & MI_FLAG_NULL) || (endTime.datetime.u.timestamp.year == 0))
         {
             // not the End report
             commandFormat =  DSC_SCRIPT_PATH "/StatusReport.sh %s StartTime";
@@ -2853,12 +2853,12 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
         
         curl = curl_easy_init();
 
-	r = SetGeneralCurlOptions(curl, extendedError);
-	if (r != MI_RESULT_OK)
+	result = SetGeneralCurlOptions(curl, extendedError);
+	if (result != MI_RESULT_OK)
 	{
 	    DSC_free(reportText);
 	    curl_easy_cleanup(curl);
-	    return r;
+	    return result;
 	}	
 	
         Snprintf(actionUrl, MAX_URL_LENGTH, "%s/Nodes(AgentId='%s')/SendReport", serverURL.string, agentId.string);
@@ -2878,9 +2878,9 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
         curl_easy_setopt(curl, CURLOPT_SSLCERT, OAAS_CERTPATH);
         curl_easy_setopt(curl, CURLOPT_SSLKEY, OAAS_KEYPATH);
         
-        res = curl_easy_perform(curl);
+        curlResult = curl_easy_perform(curl);
 
-        if (res != CURLE_OK)
+        if (curlResult != CURLE_OK)
         {
             // Error on communication.  Go to next report.
             curl_easy_cleanup(curl);
@@ -2911,7 +2911,6 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
         DSC_free(reportText);
         free(headerChunk.data);
         free(dataChunk.data);
-        
     }
 
     curl_slist_free_all(list);
@@ -2922,9 +2921,8 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
     }
     else
     {
-      MI_Char statusCodeValue[MAX_STATUSCODE_SIZE] = {0};
-      Stprintf(statusCodeValue, MAX_STATUSCODE_SIZE, MI_T("%d"), responseCode);
-      return GetCimMIError1Param(MI_RESULT_FAILED, extendedError, ID_PULL_REPORTINGFAILED, statusCodeValue);
+        MI_Char statusCodeValue[MAX_STATUSCODE_SIZE] = {0};
+        Stprintf(statusCodeValue, MAX_STATUSCODE_SIZE, MI_T("%d"), responseCode);
+        return GetCimMIError1Param(MI_RESULT_FAILED, extendedError, ID_PULL_REPORTINGFAILED, statusCodeValue);
     }
-
 }

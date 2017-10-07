@@ -81,6 +81,10 @@ extern "C"
 
     MI_Result UnInitHandler(_Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
+    MI_Result InitializeLCMContext(LCMProviderContext **lcmContext);
+
+    void FreeLCMContext(LCMProviderContext *lcmContext);
+
     MI_Result ApplyConfig(_In_ LCMProviderContext *lcmContext,
                              _In_z_ const MI_Char *configFileLocation,
                              _In_ ModuleManager *moduleManager, 
@@ -144,7 +148,8 @@ extern "C"
         MI_Uint32 dataSize,
         _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result CallSetConfiguration(_In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
+    MI_Result CallSetConfiguration(LCMProviderContext *lcmContext,
+        _In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
         MI_Uint32 dataSize,
         MI_Uint32 dwFlags,
         MI_Boolean force,
@@ -152,31 +157,37 @@ extern "C"
         _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
     MI_Result CallPerformInventory(
+        LCMProviderContext *lcmContext,
         _In_ MI_Char * InMOF,
         _Inout_ MI_InstanceA *outInstances,
         _In_ MI_Context* context,
         _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
     
-    MI_Result CallRestoreConfiguration(MI_Uint32 dwFlags,
-                               _In_ MI_Context* context,
-                               _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+    MI_Result CallRestoreConfiguration(LCMProviderContext *lcmContext,
+        MI_Uint32 dwFlags,
+        _In_ MI_Context* context,
+        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result CallGetConfiguration(_In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
+    MI_Result CallGetConfiguration(LCMProviderContext *lcmContext,
+        _In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
         MI_Uint32 dataSize,
         _Inout_ MI_InstanceA *outInstances,
         _In_ MI_Context* context,
         _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result CallTestConfiguration(_Out_ MI_Boolean *testStatus, 
+    MI_Result CallTestConfiguration(LCMProviderContext *lcmContext,
+        _Out_ MI_Boolean *testStatus, 
         _Inout_ MI_StringA *resourceId,
         _In_ MI_Context* context,
         _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
 
-    MI_Result CallConsistencyEngine(_In_ MI_Context* context,
+    MI_Result CallConsistencyEngine(LCMProviderContext *lcmContext,
+        _In_ MI_Context* context,
         _In_ MI_Uint32 invokeMode,
         _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
     
-    MI_Result RunConsistencyEngine(_In_ MI_Context* context,
+    MI_Result RunConsistencyEngine(LCMProviderContext *lcmContext,
+        _In_ MI_Context* context,
         _In_ MI_Uint32 flags,
         _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
     
@@ -419,9 +430,9 @@ extern "C"
         _Inout_ MI_Serializer *pSerializer);
 
 
-    MI_Result SetLCMStatusBusy();
+    MI_Result SetLCMStatusBusy(LCMProviderContext *lcmContext);
     
-    MI_Result SetLCMStatusReady();
+    MI_Result SetLCMStatusReady(LCMProviderContext *lcmContext);
     
     MI_Result SetLCMStatusReboot();
 

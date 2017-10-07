@@ -136,10 +136,83 @@ MI_Result DoPushDependencyCheck(
         return result;
 }
 
+// Caller will need to call FreeLCMContext
+MI_Result InitializeLCMContext(LCMProviderContext **lcmContext)
+{
+    MI_Result result = MI_RESULT_OK;
+    MI_Instance *extendedError;
+
+    MI_Application application = MI_APPLICATION_NULL;
+    MI_Boolean applicationInited = MI_FALSE;
+    MI_Instance *instance;
+
+    LCMProviderContext lcmProviderContext = {0};
+    lcmProviderContext.configurationStatus.size = 0;
+
+    *lcmContext = &lcmProviderContext;
+
+    /****************************/
+    // allocate memory for one configuration status instance
+    if ((lcmProviderContext.configurationStatus.data = (MSFT_DSCConfigurationStatus **)DSC_malloc(sizeof(MSFT_DSCConfigurationStatus*), NitsHere())) == NULL)
+    {
+        result = MI_RESULT_SERVER_LIMITS_EXCEEDED;
+        GOTO_CLEANUP_AND_THROW_ERROR_IF_FAILED(result, result, ID_LCMHELPER_MEMORY_ERROR, &extendedError, Exit);
+    }
+
+    // initialize configuration status instance
+    result = MI_Application_Initialize(0, NULL, NULL, &application);
+    GOTO_CLEANUP_IF_FAILED(result, Exit);
+    applicationInited = MI_TRUE;
+
+    result = MI_Application_NewInstance(&application, (&MSFT_DSCConfigurationStatus_rtti)->name, &MSFT_DSCConfigurationStatus_rtti, &instance);
+    GOTO_CLEANUP_AND_THROW_ERROR_IF_FAILED(result, result, ID_LCMHELPER_MEMORY_ERROR, &extendedError, Exit);
+    
+    lcmProviderContext.configurationStatus.data[0] = (MSFT_DSCConfigurationStatus*)instance;
+    lcmProviderContext.configurationStatus.size = 1;
+
+    // fill start date time property of configuration status
+    PAL_Datetime time;
+    result = CPU_GetLocalTimestamp(&time);
+    GOTO_CLEANUP_IF_FAILED(result, Exit);
+
+    result = MSFT_DSCConfigurationStatus_Set_StartDate(lcmProviderContext.configurationStatus.data[0], PalDatetimeToMiDatetime(time));
+    GOTO_CLEANUP_IF_FAILED(result, Exit);
+
+    result = MSFT_DSCConfigurationStatus_Set_HostName(lcmProviderContext.configurationStatus.data[0], g_JobInformation.deviceName);
+    GOTO_CLEANUP_IF_FAILED(result, Exit);
+
+    result = MSFT_DSCConfigurationStatus_Set_LCMVersion(lcmProviderContext.configurationStatus.data[0], LCM_CURRENT_VERSION);
+    GOTO_CLEANUP_IF_FAILED(result, Exit);
+
+    // TODO: operation type should be passed into this function
+    // fill type property of configuration status (initial, consistency, reboot, readonly)
+    // MSFT_DSCConfigurationStatus_Set_Type(lcmContext->configurationStatus.data[0], operationType);
+    /****************************/
+
+Exit:
+    if (applicationInited)
+    {
+        MI_Application_Close(&application);
+        applicationInited = MI_FALSE;
+    }
+
+    return result;
+}
+
+void FreeLCMContext(LCMProviderContext *lcmContext)
+{
+    if (lcmContext->configurationStatus.data != NULL)
+    {
+        DSC_free(lcmContext->configurationStatus.data);
+        lcmContext->configurationStatus.data = NULL;
+        lcmContext->configurationStatus.size = 0;
+    }
+}
+
 void SetLCMProviderContext(_Inout_ LCMProviderContext *lcmContext, MI_Uint32 executionMode, _In_ void *context)
 {
-        lcmContext->executionMode = executionMode;
-        lcmContext->context = context;
+    lcmContext->executionMode = executionMode;
+    lcmContext->context = context;
 }
 
 MI_Result GetNextRefreshTimeHelper(_Inout_updates_z_(MAX_PATH) MI_Char* timeString)
@@ -568,55 +641,56 @@ MI_Result UnInitHandler(
 }
 
 MI_Result CallTestConfiguration(
+    LCMProviderContext *lcmContext,
     _Out_ MI_Boolean *testStatus, 
     _Inout_ MI_StringA *resourceId,
     _In_ MI_Context* context,
     _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
 {
     MI_Result result = MI_RESULT_OK;
-    LCMProviderContext lcmContext = {0};
     ModuleManager *moduleManager = NULL;
     MI_Uint32 resultStatus = 0;
 
     //Debug Log 
-    DSC_EventWriteLocalConfigMethodParameters(__WFUNCTION__,0,0,lcmContext.executionMode);
+    DSC_EventWriteLocalConfigMethodParameters(__WFUNCTION__, 0, 0, lcmContext->executionMode);
 
     *testStatus = MI_FALSE;
 
     //If the current configuration file is not found, function ends with a corresponding error message
     if (File_ExistT(GetCurrentConfigFileName()) == -1 && File_ExistT(GetPendingConfigFileName()) == -1)
     {
-        SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         return GetCimMIError(MI_RESULT_NOT_FOUND, cimErrorDetails, ID_LCMHELPER_CURRENT_NOTFOUND);
     }
 
-    lcmContext.executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
-    lcmContext.context = (void*)context;
+    lcmContext->executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
+    lcmContext->context = (void*)context;
+
     result = InitializeModuleManager(0, cimErrorDetails, &moduleManager);    
     if (result != MI_RESULT_OK)
     {
-        SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         return result;
     }
     
     if (moduleManager == NULL || moduleManager->ft == NULL)
     {
-        SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         return GetCimMIError(MI_RESULT_INVALID_PARAMETER, cimErrorDetails,ID_MODMAN_MODMAN_NULLPARAM);   
     }
 
-    SetMessageInContext(ID_OUTPUT_OPERATION_START,ID_OUTPUT_ITEM_TEST,&lcmContext);
-    LCM_BuildMessage(&lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+    SetMessageInContext(ID_OUTPUT_OPERATION_START, ID_OUTPUT_ITEM_TEST, lcmContext);
+    LCM_BuildMessage(lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
     
     if (File_ExistT(GetCurrentConfigFileName()) != -1)
     {
-        result = ApplyCurrentConfig(&lcmContext, moduleManager, LCM_EXECUTE_TESTONLY, &resultStatus, cimErrorDetails);
+        result = ApplyCurrentConfig(lcmContext, moduleManager, LCM_EXECUTE_TESTONLY, &resultStatus, cimErrorDetails);
     }
 
     if (File_ExistT(GetPendingConfigFileName()) != -1)
     {
-        DSC_WriteWarning(&lcmContext, ID_LCMHELPER_TEST_OPERATION_AGAINST_PENDING);
-        result = ApplyPendingConfig(&lcmContext, moduleManager, LCM_EXECUTE_TESTONLY, &resultStatus, cimErrorDetails);
+        DSC_WriteWarning(lcmContext, ID_LCMHELPER_TEST_OPERATION_AGAINST_PENDING);
+        result = ApplyPendingConfig(lcmContext, moduleManager, LCM_EXECUTE_TESTONLY, &resultStatus, cimErrorDetails);
     }
 
     moduleManager->ft->Close(moduleManager, NULL);
@@ -625,30 +699,31 @@ MI_Result CallTestConfiguration(
         if (resultStatus == 0)
         {
             *testStatus = MI_FALSE;
-            SetMessageInContext(ID_OUTPUT_OPERATION_END,ID_OUTPUT_ITEM_TEST,&lcmContext);
-            LCM_BuildMessage(&lcmContext, ID_LCM_WRITEMESSAGE_ENDTESTPROCESSING_FALSE, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);  
+            SetMessageInContext(ID_OUTPUT_OPERATION_END, ID_OUTPUT_ITEM_TEST, lcmContext);
+            LCM_BuildMessage(lcmContext, ID_LCM_WRITEMESSAGE_ENDTESTPROCESSING_FALSE, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);  
         }
         else
         {
             *testStatus = MI_TRUE;
-            SetMessageInContext(ID_OUTPUT_OPERATION_END,ID_OUTPUT_ITEM_TEST,&lcmContext);
-            LCM_BuildMessage(&lcmContext, ID_LCM_WRITEMESSAGE_ENDTESTPROCESSING_TRUE, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);  
+            SetMessageInContext(ID_OUTPUT_OPERATION_END, ID_OUTPUT_ITEM_TEST, lcmContext);
+            LCM_BuildMessage(lcmContext, ID_LCM_WRITEMESSAGE_ENDTESTPROCESSING_TRUE, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);  
         }
     }
     else
     {
-        SetMessageInContext(ID_OUTPUT_OPERATION_FAILED,ID_OUTPUT_ITEM_TEST,&lcmContext);
-        LCM_BuildMessage(&lcmContext, ID_LCM_WRITEMESSAGE_ENDTESTPROCESSING_FAIL, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);  
+        SetMessageInContext(ID_OUTPUT_OPERATION_FAILED, ID_OUTPUT_ITEM_TEST, lcmContext);
+        LCM_BuildMessage(lcmContext, ID_LCM_WRITEMESSAGE_ENDTESTPROCESSING_FAIL, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);  
     }
 
     //Debug Log 
     DSC_EventWriteMethodEnd(__WFUNCTION__);
 
-        return result;
+    return result;
 }
 
 /* caller release outinstances */
 MI_Result CallGetConfiguration(
+    LCMProviderContext *lcmContext,
     _In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
     MI_Uint32 dataSize,
     _Inout_ MI_InstanceA *outInstances,
@@ -659,12 +734,11 @@ MI_Result CallGetConfiguration(
     MI_InstanceA getInstances = {0};
     MI_Instance *documentIns = NULL;
     MI_InstanceA getResultInstances = {0};
-    LCMProviderContext lcmContext = {0};
     BOOL fResult;
     ModuleManager *moduleManager = NULL;
 
     //Debug Log 
-    DSC_EventWriteLocalConfigMethodParameters(__WFUNCTION__,dataSize,0,lcmContext.executionMode);
+    DSC_EventWriteLocalConfigMethodParameters(__WFUNCTION__, dataSize, 0, lcmContext->executionMode);
 
     if (cimErrorDetails == NULL)
     {        
@@ -672,12 +746,12 @@ MI_Result CallGetConfiguration(
     }
     *cimErrorDetails = NULL;    // Explicitly set *cimErrorDetails to NULL as _Outptr_ requires setting this at least once. 
 
-    lcmContext.executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
-    lcmContext.context = (void*)context;    
+    lcmContext->executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
+    lcmContext->context = (void*)context;    
     result = ValidateConfigurationDirectory(cimErrorDetails);
     if (result != MI_RESULT_OK)
     {
-        SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         if (cimErrorDetails && *cimErrorDetails)
             return result;
 
@@ -690,7 +764,7 @@ MI_Result CallGetConfiguration(
         fResult = File_RemoveT(GetGetConfigFileName());
         if (fResult || NitsShouldFault(NitsHere(), NitsAutomatic))
         {
-            SetLCMStatusReady();
+            SetLCMStatusReady(lcmContext);
             return GetCimWin32Error(MI_RESULT_FAILED, cimErrorDetails, ID_LCMHELPER_DEL_GETFILEBEFORE_FAILED);
         }
     }
@@ -700,7 +774,7 @@ MI_Result CallGetConfiguration(
         // If both the current and pending configuration files do not exist, output a corresponding error message and return
         if (File_ExistT(GetCurrentConfigFileName()) == -1 && File_ExistT(GetPendingConfigFileName()) == -1)
         {
-            SetLCMStatusReady();
+            SetLCMStatusReady(lcmContext);
             return GetCimMIError(MI_RESULT_FAILED, cimErrorDetails, ID_LCMHELPER_CURRENT_NOTFOUND);
         }
 
@@ -711,7 +785,7 @@ MI_Result CallGetConfiguration(
         }
         else
         {
-            DSC_WriteWarning(&lcmContext, ID_LCMHELPER_GET_OPERATION_AGAINST_PENDING);
+            DSC_WriteWarning(lcmContext, ID_LCMHELPER_GET_OPERATION_AGAINST_PENDING);
             result = File_CopyT(GetPendingConfigFileName(), GetGetConfigFileName());
         }
 
@@ -726,7 +800,7 @@ MI_Result CallGetConfiguration(
 
         if (result != MI_RESULT_OK )
         {
-            SetLCMStatusReady();
+            SetLCMStatusReady(lcmContext);
             if (cimErrorDetails && *cimErrorDetails)
             {
                 return result;
@@ -739,7 +813,7 @@ MI_Result CallGetConfiguration(
     result = InitializeModuleManager(0, cimErrorDetails, &moduleManager);
     if (result != MI_RESULT_OK)
     {
-        SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         return result;
     }
 
@@ -747,7 +821,7 @@ MI_Result CallGetConfiguration(
     if (result != MI_RESULT_OK)
     {
         moduleManager->ft->Close(moduleManager, NULL);
-        SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         if (cimErrorDetails && *cimErrorDetails)
             return result;
         
@@ -761,7 +835,7 @@ MI_Result CallGetConfiguration(
         {
             CleanUpInstanceCache(&getInstances);
             moduleManager->ft->Close(moduleManager, NULL);
-            SetLCMStatusReady();
+            SetLCMStatusReady(lcmContext);
             MI_Instance_Delete(documentIns);
             return result;
         }
@@ -772,14 +846,14 @@ MI_Result CallGetConfiguration(
     {
         MI_Instance_Delete(documentIns);
         moduleManager->ft->Close(moduleManager, NULL);
-        SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         return GetCimMIError(MI_RESULT_INVALID_PARAMETER, cimErrorDetails, ID_LCMHELPER_NORESOURCESPECIFIED);
     }
 
-    SetMessageInContext(ID_OUTPUT_OPERATION_START,ID_OUTPUT_ITEM_GET,&lcmContext);
-    LCM_BuildMessage(&lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+    SetMessageInContext(ID_OUTPUT_OPERATION_START, ID_OUTPUT_ITEM_GET, lcmContext);
+    LCM_BuildMessage(lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
 
-    result = GetConfiguration(&lcmContext, 0, &getInstances, moduleManager, documentIns, &getResultInstances, cimErrorDetails);
+    result = GetConfiguration(lcmContext, 0, &getInstances, moduleManager, documentIns, &getResultInstances, cimErrorDetails);
     
     MI_Instance_Delete(documentIns);
 
@@ -788,8 +862,8 @@ MI_Result CallGetConfiguration(
     CleanUpInstanceCache(&getInstances);
     if (result != MI_RESULT_OK)
     {
-                SetLCMStatusReady();
-                if (cimErrorDetails && *cimErrorDetails)
+        SetLCMStatusReady(lcmContext);
+        if (cimErrorDetails && *cimErrorDetails)
             return result;
 
         return GetCimMIError(result, cimErrorDetails, ID_LCMHELPER_GET_CONF_FAILED);
@@ -798,7 +872,7 @@ MI_Result CallGetConfiguration(
     fResult = File_RemoveT(GetGetConfigFileName());
     if (fResult || NitsShouldFault(NitsHere(), NitsAutomatic))
     {
-                SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         return GetCimWin32Error(MI_RESULT_FAILED, cimErrorDetails, ID_LCMHELPER_DEL_GETFILEAFTER_FAILED);
     } 
 
@@ -812,6 +886,7 @@ MI_Result CallGetConfiguration(
 }
 
 MI_Result CallSetConfiguration(
+    LCMProviderContext *lcmContext,
     _In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
     MI_Uint32 dataSize,
     MI_Uint32 dwFlags,
@@ -823,13 +898,11 @@ MI_Result CallSetConfiguration(
     MI_Instance *metaConfigInstance = NULL;
     MI_Value configModeValue;
 
-    LCMProviderContext lcmContext = {0};
-
     //Debug Log 
-    DSC_EventWriteLocalConfigMethodParameters(__WFUNCTION__,dataSize,dwFlags,lcmContext.executionMode);
+    DSC_EventWriteLocalConfigMethodParameters(__WFUNCTION__, dataSize, dwFlags, lcmContext->executionMode);
 
-    lcmContext.executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
-    lcmContext.context = (void*)context;
+    lcmContext->executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
+    lcmContext->context = (void*)context;
 
     r = GetMetaConfig(&metaConfigInstance);
     EH_CheckResult(r);
@@ -840,30 +913,30 @@ MI_Result CallSetConfiguration(
     // We tell user that LCM is running in MonitorOnly mode and will be testing only
     if (ShouldMonitorOnly(configModeValue.string) && !(dwFlags & LCM_SET_METACONFIG))
     {
-        LCM_BuildMessage(&lcmContext, ID_LCM_MONITORONLY_CONFIGURATIONMODE, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+        LCM_BuildMessage(lcmContext, ID_LCM_MONITORONLY_CONFIGURATIONMODE, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
     }
     else
     {
         //log method start in verbose
-        SetMessageInContext(ID_OUTPUT_OPERATION_START, ID_OUTPUT_ITEM_SET, &lcmContext);
-        LCM_BuildMessage(&lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+        SetMessageInContext(ID_OUTPUT_OPERATION_START, ID_OUTPUT_ITEM_SET, lcmContext);
+        LCM_BuildMessage(lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
     }
 
     if (dwFlags & LCM_SETFLAGS_ENABLEWHATIF)
     {
-        lcmContext.executionMode |= LCM_SETFLAGS_ENABLEWHATIF;
+        lcmContext->executionMode |= LCM_SETFLAGS_ENABLEWHATIF;
     }
 
-    SetMessageInContext(ID_OUTPUT_OPERATION_START,ID_OUTPUT_ITEM_SET,&lcmContext);
-    LCM_BuildMessage(&lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
-    r =  SetConfiguration(ConfigData, dataSize, force, &lcmContext, dwFlags, cimErrorDetails);
+    SetMessageInContext(ID_OUTPUT_OPERATION_START, ID_OUTPUT_ITEM_SET, lcmContext);
+    LCM_BuildMessage(lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+    r = SetConfiguration(ConfigData, dataSize, force, lcmContext, dwFlags, cimErrorDetails);
 
 EH_UNWIND:
     // No need to output set End when LCM is running in 'MonitorOnly' Mode.
     if (!ShouldMonitorOnly(configModeValue.string))
     {
-        SetMessageInContext(ID_OUTPUT_OPERATION_END, ID_OUTPUT_ITEM_SET, &lcmContext);
-        LCM_BuildMessage(&lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+        SetMessageInContext(ID_OUTPUT_OPERATION_END, ID_OUTPUT_ITEM_SET, lcmContext);
+        LCM_BuildMessage(lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
     }
 
     //Debug Log 
@@ -873,22 +946,22 @@ EH_UNWIND:
 }
 
 MI_Result CallRestoreConfiguration(
+    LCMProviderContext *lcmContext,
     MI_Uint32 dwFlags,
     _In_ MI_Context* context,
     _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
 {
     MI_Result r = MI_RESULT_OK;
-    LCMProviderContext lcmContext = {0};
     MI_Uint8A PreviousConfigValue={0};
     MI_Uint32 bufferIndex = 0;
 
     //Debug Log 
-    DSC_EventWriteLocalConfigMethodParameters(__WFUNCTION__,0,dwFlags,lcmContext.executionMode);
+    DSC_EventWriteLocalConfigMethodParameters(__WFUNCTION__, 0, dwFlags, lcmContext->executionMode);
 
     //If the previous configuration file does not exist, output a corresponding error message and return
     if (File_ExistT(GetPreviousConfigFileName())== -1)
     {
-                SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         return GetCimMIError(MI_RESULT_FAILED, cimErrorDetails, ID_LCMHELPER_PREVIOUS_NOTFOUND);
     }
 
@@ -896,21 +969,21 @@ MI_Result CallRestoreConfiguration(
     r = ReadFileContent(GetPreviousConfigFileName(), &PreviousConfigValue.data, &PreviousConfigValue.size,cimErrorDetails);
     if (r != MI_RESULT_OK)
     {
-                SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         return r;
     }
 
     GetRealBufferIndex((const MI_ConstUint8A*) &(PreviousConfigValue), &bufferIndex);
-    lcmContext.executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
-    lcmContext.context = (void*)context;
+    lcmContext->executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
+    lcmContext->context = (void*)context;
     if(dwFlags & LCM_SETFLAGS_ENABLEWHATIF)
     {
-        lcmContext.executionMode |= LCM_SETFLAGS_ENABLEWHATIF;
+        lcmContext->executionMode |= LCM_SETFLAGS_ENABLEWHATIF;
     }
 
-    SetMessageInContext(ID_OUTPUT_OPERATION_START,ID_OUTPUT_ITEM_ROLLBACK,&lcmContext);
-    LCM_BuildMessage(&lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
-    r =  SetConfiguration(PreviousConfigValue.data + bufferIndex, PreviousConfigValue.size - bufferIndex,MI_FALSE,&lcmContext, dwFlags, cimErrorDetails);
+    SetMessageInContext(ID_OUTPUT_OPERATION_START, ID_OUTPUT_ITEM_ROLLBACK, lcmContext);
+    LCM_BuildMessage(lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+    r = SetConfiguration(PreviousConfigValue.data + bufferIndex, PreviousConfigValue.size - bufferIndex,MI_FALSE, lcmContext, dwFlags, cimErrorDetails);
 
         //Debug Log 
     DSC_EventWriteMethodEnd(__WFUNCTION__);
@@ -919,19 +992,19 @@ MI_Result CallRestoreConfiguration(
 }
 
 MI_Result CallConsistencyEngine(
+    LCMProviderContext *lcmContext,
     _In_ MI_Context* context,
     _In_ MI_Uint32 invokeMode,
     _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
 {
     MI_Result result = MI_RESULT_OK;
-    LCMProviderContext lcmContext = {0};
     ModuleManager *moduleManager = NULL;
     MI_Uint32 resultStatus = 0;
     MI_Instance *metaConfigInstance = NULL;
     MI_Uint32 flags;
     MI_Value configModeValue;
         
-    DSC_EventWriteLocalConfigMethodParameters(__WFUNCTION__,0,0,lcmContext.executionMode);
+    DSC_EventWriteLocalConfigMethodParameters(__WFUNCTION__, 0, 0, lcmContext->executionMode);
 
     if (cimErrorDetails == NULL)
     {        
@@ -939,14 +1012,14 @@ MI_Result CallConsistencyEngine(
     }
     *cimErrorDetails = NULL;    // Explicitly set *cimErrorDetails to NULL as _Outptr_ requires setting this at least once. 
 
-    lcmContext.executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
-    lcmContext.context = (void*)context;
-    LCM_BuildMessage(&lcmContext, ID_LCM_WRITEMESSAGE_STARTCONSISTENCY, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);    
+    lcmContext->executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
+    lcmContext->context = (void*)context;
+    LCM_BuildMessage(lcmContext, ID_LCM_WRITEMESSAGE_STARTCONSISTENCY, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);    
 
     result = ValidateConfigurationDirectory(cimErrorDetails);
     if (result != MI_RESULT_OK)
     {
-                SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         if (cimErrorDetails && *cimErrorDetails)
             return result;
 
@@ -956,14 +1029,14 @@ MI_Result CallConsistencyEngine(
     result = InitializeModuleManager(0, cimErrorDetails, &moduleManager);    
     if (result != MI_RESULT_OK)
     {
-                SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         return result;
     }
 
     result = GetMetaConfig((MSFT_DSCMetaConfiguration **)&metaConfigInstance);
     if (result != MI_RESULT_OK)
     {
-                SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         moduleManager->ft->Close(moduleManager, NULL);
         return result;
     }     
@@ -973,7 +1046,7 @@ MI_Result CallConsistencyEngine(
     {
         MSFT_DSCMetaConfiguration_Delete((MSFT_DSCMetaConfiguration *)metaConfigInstance);
         moduleManager->ft->Close(moduleManager, NULL);
-                SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         return result;
     }
 
@@ -981,12 +1054,12 @@ MI_Result CallConsistencyEngine(
     if (ShouldUsePartialConfigurations(metaConfigInstance, MI_FALSE))
     {
         //If the partial configurations directory contains partial files, combine them and save into pending.mof
-        result = MergePartialConfigurations(&lcmContext, moduleManager, GetPendingConfigFileName(), GetPartialConfigBaseDocumentInstanceFileName(), cimErrorDetails);
+        result = MergePartialConfigurations(lcmContext, moduleManager, GetPendingConfigFileName(), GetPartialConfigBaseDocumentInstanceFileName(), cimErrorDetails);
         if (result != MI_RESULT_OK)
         {
             MSFT_DSCMetaConfiguration_Delete((MSFT_DSCMetaConfiguration *)metaConfigInstance);
             moduleManager->ft->Close(moduleManager, NULL);
-            SetLCMStatusReady(lcmContext, result);
+            SetLCMStatusReady(lcmContext);
             return result;
         }
     }
@@ -996,9 +1069,9 @@ MI_Result CallConsistencyEngine(
     {
         if (!ShouldUsePartialConfigurations(metaConfigInstance, MI_FALSE))
         {
-            LCM_BuildMessage(&lcmContext, ID_LCM_WRITEMESSAGE_CONSISTENCY_PENDINGEXIST, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+            LCM_BuildMessage(lcmContext, ID_LCM_WRITEMESSAGE_CONSISTENCY_PENDINGEXIST, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
         }
-        result = ApplyPendingConfig(&lcmContext, moduleManager, 0, &resultStatus, cimErrorDetails);
+        result = ApplyPendingConfig(lcmContext, moduleManager, 0, &resultStatus, cimErrorDetails);
         if (result == MI_RESULT_OK && (resultStatus & DSC_RESTART_SYSTEM_FLAG))
         {
             SetLCMStatusReboot();
@@ -1008,8 +1081,8 @@ MI_Result CallConsistencyEngine(
     {
         if (ShouldAutoCorrect(configModeValue.string))
         {
-            LCM_BuildMessage(&lcmContext, ID_LCM_WRITEMESSAGE_CONSISTENCY_CURRENTEXIST, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);     
-            result = ApplyCurrentConfig(&lcmContext, moduleManager, 0, &resultStatus, cimErrorDetails);
+            LCM_BuildMessage(lcmContext, ID_LCM_WRITEMESSAGE_CONSISTENCY_CURRENTEXIST, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);     
+            result = ApplyCurrentConfig(lcmContext, moduleManager, 0, &resultStatus, cimErrorDetails);
             if (result == MI_RESULT_OK && (resultStatus & DSC_RESTART_SYSTEM_FLAG))
             {
                 SetLCMStatusReboot();
@@ -1020,15 +1093,13 @@ MI_Result CallConsistencyEngine(
         {
             MI_Char* messageEvent=NULL;
             MI_Char* newLine=MI_T("\n");
-            result = ApplyCurrentConfig(&lcmContext, moduleManager, LCM_EXECUTE_TESTONLY, &resultStatus, cimErrorDetails);
-            if(resultStatus==MI_FALSE)
+            result = ApplyCurrentConfig(lcmContext, moduleManager, LCM_EXECUTE_TESTONLY, &resultStatus, cimErrorDetails);
+            if (resultStatus == MI_FALSE)
             {
                 Intlstr intlstr = Intlstr_Null;
                 GetResourceString(ID_LCM_WRITEMESSAGE_ENDTESTPROCESSING_FALSE,&intlstr);   
                 ConcatStrings(&messageEvent,10,newLine, (MI_Char*)intlstr.str);
-    
 
-                
                 if (messageEvent != NULL)
                 {
                     //Output event stating it resulted in false.
@@ -1036,13 +1107,13 @@ MI_Result CallConsistencyEngine(
                     DSC_free(messageEvent);
                 }
 
-                if(intlstr.str)
+                if (intlstr.str)
                     Intlstr_Free(intlstr);
 
                 // This is a difference between Windows DSC and Linux DSC in ApplyAndMonitor mode. Not sure why.
                 if (ShouldMonitor(configModeValue.string))
                 {
-                    result =  GetCimMIError(MI_RESULT_FAILED, cimErrorDetails, ID_LCM_WRITEMESSAGE_ENDTESTPROCESSING_FALSE);
+                    result = GetCimMIError(MI_RESULT_FAILED, cimErrorDetails, ID_LCM_WRITEMESSAGE_ENDTESTPROCESSING_FALSE);
                 }
             }
         }
@@ -1051,10 +1122,10 @@ MI_Result CallConsistencyEngine(
     {
         // We don't have any pending or current. Nothing to apply - Logging an event for that.
         DSC_EventWriteLCMConsistencyEngineNoCurrentPending();
-        result =  MI_RESULT_OK;
+        result = MI_RESULT_OK;
     }
 
-    LCM_BuildMessage(&lcmContext, ID_LCM_WRITEMESSAGE_ENDCONSISTENCY, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);  
+    LCM_BuildMessage(lcmContext, ID_LCM_WRITEMESSAGE_ENDCONSISTENCY, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);  
     MSFT_DSCMetaConfiguration_Delete((MSFT_DSCMetaConfiguration *)metaConfigInstance);
     moduleManager->ft->Close(moduleManager, NULL);
 
@@ -3667,21 +3738,23 @@ MI_Result GetMofChecksum(
 }
 
 MI_Result RunConsistencyEngine(
+    LCMProviderContext *lcmContext,
     _In_ MI_Context* context,
     _In_ MI_Uint32 flags,
     _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
 {
-    MI_Result r = MI_RESULT_OK;
+    MI_Result result = MI_RESULT_OK;
     MI_Boolean complianceStatus;
 
     // Log the event here
     DSC_EventWriteLCMConsistencyEngineRunAttempt();    
-    r = CallConsistencyEngine(context, flags, cimErrorDetails);
-    if (r == MI_RESULT_OK)
+    result = CallConsistencyEngine(lcmContext, context, flags, cimErrorDetails);
+
+    if (result == MI_RESULT_OK)
     {
         // update compliance result.
         complianceStatus = MI_TRUE;
-        r = UpdateCurrentStatus(&complianceStatus, NULL, NULL, NULL, cimErrorDetails);
+        result = UpdateCurrentStatus(&complianceStatus, NULL, NULL, NULL, cimErrorDetails);
         DSC_EventWriteLCMConsistencyEngineRunSuccess();
     }
     else
@@ -3694,7 +3767,7 @@ MI_Result RunConsistencyEngine(
         MI_Instance_Delete(tempCimErrorDetails);
     }
 
-    return r;
+    return result;
 }
 
 
@@ -4656,7 +4729,7 @@ MI_Result ReportStatusToServer(
     // Send these values from ConfigurationStatus
 
     /**********************/
-    if (lcmContext->configurationStatus.size >= 1)
+    if (lcmContext != NULL && lcmContext->configurationStatus.data != NULL && lcmContext->configurationStatus.size >= 1)
     {
         MSFT_DSCConfigurationStatus *configurationStatus = lcmContext->configurationStatus.data[0];
         if (!lcmContext->bNotFirstTimeReport)
@@ -4666,14 +4739,7 @@ MI_Result ReportStatusToServer(
             {
                 value.datetime = configurationStatus->StartDate.value;
                 result = MI_Instance_AddElement(statusReport, REPORTING_STARTTIME, &value, MI_DATETIME, 0);
-                if (result != MI_RESULT_OK)
-                {
-                    MI_Application_Close(&miApp);
-                    MI_Instance_Delete(statusReport);
-                    MI_Instance_Delete(errorObject);
-                    MI_Instance_Delete(statusObject);
-                    return result;
-                }
+                EH_CheckResult(result);
             }
             /*
             // Set OperationType
@@ -4695,14 +4761,7 @@ MI_Result ReportStatusToServer(
             {
                 value.string = (MI_Char*)configurationStatus->HostName.value;
                 result = MI_Instance_AddElement(statusReport, REPORTING_NODENAME, &value, MI_STRING, 0);
-                if (result != MI_RESULT_OK)
-                {
-                    MI_Application_Close(&miApp);
-                    MI_Instance_Delete(statusReport);
-                    MI_Instance_Delete(errorObject);
-                    MI_Instance_Delete(statusObject);
-                    return result;
-                }
+                EH_CheckResult(result);
             }
             /*
             // Set Ipadress
@@ -4724,14 +4783,7 @@ MI_Result ReportStatusToServer(
             {
                 value.string = (MI_Char*)configurationStatus->LCMVersion.value;
                 result = MI_Instance_AddElement(statusReport, REPORTING_LCMVERSION, &value, MI_STRING, 0);
-                if (result != MI_RESULT_OK)
-                {
-                    MI_Application_Close(&miApp);
-                    MI_Instance_Delete(statusReport);
-                    MI_Instance_Delete(errorObject);
-                    MI_Instance_Delete(statusObject);
-                    return result;
-                }
+                EH_CheckResult(result);
             }
             /*
             // Set Configuration version
@@ -6664,19 +6716,12 @@ MI_Result TimeToRunConsistencyCheck(
     return MI_RESULT_OK;
 }
 
-MI_Result SetLCMStatusBusy()
+MI_Result SetLCMStatusBusy(LCMProviderContext *lcmContext)
 {
     MI_Uint32 lcmStatus;
     MI_Instance *extendedError;
     MI_Result result;
 
-    MI_Application application = MI_APPLICATION_NULL;
-    MI_Boolean applicationInited = MI_FALSE;
-    MI_Instance *instance;
-
-    LCMProviderContext lcmProviderContext = {0};
-    LCMProviderContext *lcmContext = &lcmProviderContext;
-        
     g_currentError[0] = '\0';
 
     if (!g_LCMPendingReboot)
@@ -6684,106 +6729,48 @@ MI_Result SetLCMStatusBusy()
         lcmStatus = LCM_STATUSCODE_BUSY;
         result = UpdateCurrentStatus(NULL, NULL, &lcmStatus, NULL, &extendedError);
 #ifdef TEST_BUILD
-        NitsAssert(r == MI_RESULT_OK, "UpdateCurrentStatus should succeed");
+        NitsAssert(result == MI_RESULT_OK, "UpdateCurrentStatus should succeed");
 #endif
         result = UpdateMetaConfigWithLCMState(&lcmStatus, (MI_Instance *)g_metaConfig);
 #ifdef TEST_BUILD
-        NitsAssert(r == MI_RESULT_OK, "UpdateCurrentStatus should succeed");
+        NitsAssert(result == MI_RESULT_OK, "UpdateCurrentStatus should succeed");
 #endif
     }
 
     if (g_registrationManager != NULL && ((RegistrationManager*)g_registrationManager)->agentId != NULL)
     {
-        UpdateMetaConfigWithAgentId( ((RegistrationManager*)g_registrationManager)->agentId, (MI_Instance*)g_metaConfig);
+        result = UpdateMetaConfigWithAgentId( ((RegistrationManager*)g_registrationManager)->agentId, (MI_Instance*)g_metaConfig);
     }
-
-/****************************/
-// allocate memory for one configuration status instance
-    if ((lcmContext->configurationStatus.data = (MSFT_DSCConfigurationStatus **)DSC_malloc(sizeof(MSFT_DSCConfigurationStatus*), NitsHere())) == NULL)
-    {
-        result = MI_RESULT_SERVER_LIMITS_EXCEEDED;
-        GOTO_CLEANUP_AND_THROW_ERROR_IF_FAILED(result, result, ID_LCMHELPER_MEMORY_ERROR, &extendedError, Exit);
-    }
-
-    // initialize configuration status instance
-    result = MI_Application_Initialize(0, NULL, NULL, &application);
-    GOTO_CLEANUP_IF_FAILED(result, Exit);
-    applicationInited = MI_TRUE;
-
-    result = MI_Application_NewInstance(&application, (&MSFT_DSCConfigurationStatus_rtti)->name, &MSFT_DSCConfigurationStatus_rtti, &instance);
-    GOTO_CLEANUP_AND_THROW_ERROR_IF_FAILED(result, result, ID_LCMHELPER_MEMORY_ERROR, &extendedError, Exit);
-    
-    lcmContext->configurationStatus.data[0] = (MSFT_DSCConfigurationStatus*)instance;
-    lcmContext->configurationStatus.size = 1;
-
-    // fill start date time property of configuration status
-    PAL_Datetime time;
-    result = CPU_GetLocalTimestamp(&time);
-    GOTO_CLEANUP_IF_FAILED(result, Exit);
-
-    result = MSFT_DSCConfigurationStatus_Set_StartDate(lcmContext->configurationStatus.data[0], PalDatetimeToMiDatetime(time));
-    GOTO_CLEANUP_IF_FAILED(result, Exit);
-
-    result = MSFT_DSCConfigurationStatus_Set_HostName(lcmContext->configurationStatus.data[0], g_JobInformation.deviceName);
-    GOTO_CLEANUP_IF_FAILED(result, Exit);
-
-    result = MSFT_DSCConfigurationStatus_Set_LCMVersion(lcmContext->configurationStatus.data[0], LCM_CURRENT_VERSION);
-    GOTO_CLEANUP_IF_FAILED(result, Exit);
-
-    // TODO: operation type should be passed into this function
-    // fill type property of configuration status (initial, consistency, reboot, readonly)
-    // MSFT_DSCConfigurationStatus_Set_Type(lcmContext->configurationStatus.data[0], operationType);
-/****************************/
 
     result = ReportStatusToServer(lcmContext, NULL, NULL, NULL, 0, MI_FALSE, /*isStatusReport*/ 1, (MI_Instance*)NULL);
-    GOTO_CLEANUP_IF_FAILED(result, Exit);
-
-Exit:
-    if (applicationInited)
-    {
-        MI_Application_Close(&application);
-        applicationInited = MI_FALSE;
-    }
-
-	if (result != MI_RESULT_OK)
-	{
-        if (lcmContext->configurationStatus.data != NULL)
-        {
-            DSC_free(lcmContext->configurationStatus.data);
-		    lcmContext->configurationStatus.data = NULL;
-		    lcmContext->configurationStatus.size = 0;
-        }
-	}
 
     // errors in above invocation are silently ignored since failure of updating status should not block other operations
-    //result = MI_RESULT_OK;
-    return result;
+    return MI_RESULT_OK;
 }
 
-MI_Result SetLCMStatusReady()
+MI_Result SetLCMStatusReady(LCMProviderContext *lcmContext)
 {
-        MI_Uint32 lcmStatus;
-        MI_Instance *extendedError;
-        MI_Result r;
+    MI_Uint32 lcmStatus;
+    MI_Instance *extendedError;
+    MI_Result result;
 
-        if (!g_LCMPendingReboot)
-        {
-                lcmStatus = LCM_STATUSCODE_READY;
-                r = UpdateCurrentStatus(NULL, NULL, &lcmStatus, NULL, &extendedError);
+    if (!g_LCMPendingReboot)
+    {
+        lcmStatus = LCM_STATUSCODE_READY;
+        result = UpdateCurrentStatus(NULL, NULL, &lcmStatus, NULL, &extendedError);
 #ifdef TEST_BUILD
-                NitsAssert(r == MI_RESULT_OK, "UpdateCurrentStatus should succeed");
+        NitsAssert(result == MI_RESULT_OK, "UpdateCurrentStatus should succeed");
 #endif
-                r = UpdateMetaConfigWithLCMState(&lcmStatus, (MI_Instance *)g_metaConfig);
+        result = UpdateMetaConfigWithLCMState(&lcmStatus, (MI_Instance *)g_metaConfig);
 #ifdef TEST_BUILD
-                NitsAssert(r == MI_RESULT_OK, "UpdateCurrentStatus should succeed");
+        NitsAssert(result == MI_RESULT_OK, "UpdateCurrentStatus should succeed");
 #endif
-        }
+    }
 
-        //ReportStatusToServer(NULL, NULL, NULL, NULL, 0, MI_TRUE, /*isStatusReport*/ 1, (MI_Instance*)NULL);
+    ReportStatusToServer(lcmContext, NULL, NULL, NULL, 0, MI_TRUE, /*isStatusReport*/ 1, (MI_Instance*)NULL);
 
-        // errors in above invocation are silently ignored since failure of updating status should not block other operations
-        r = MI_RESULT_OK;
-        return r;
+    // errors in above invocation are silently ignored since failure of updating status should not block other operations
+    return MI_RESULT_OK;
 }
 
 MI_Result SetLCMStatusReboot()
@@ -6911,6 +6898,7 @@ MI_Result GetLCMStatusCodeHistory(
 
 /* caller release outinstances */
 MI_Result CallPerformInventory(
+    LCMProviderContext *lcmContext,
     _In_ MI_Char * InMOF,
     _Inout_ MI_InstanceA *outInstances,
     _In_ MI_Context* context,
@@ -6920,7 +6908,6 @@ MI_Result CallPerformInventory(
     MI_InstanceA inventoryInstances = {0};
     MI_Instance *documentIns = NULL;
     MI_InstanceA inventoryResultInstances = {0};
-    LCMProviderContext lcmContext = {0};
     BOOL fResult;
     ModuleManager *moduleManager = NULL;
 
@@ -6930,12 +6917,12 @@ MI_Result CallPerformInventory(
     }
     *cimErrorDetails = NULL;    // Explicitly set *cimErrorDetails to NULL as _Outptr_ requires setting this at least once. 
 
-    lcmContext.executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
-    lcmContext.context = (void*)context;    
+    lcmContext->executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
+    lcmContext->context = (void*)context;    
     result = ValidateConfigurationDirectory(cimErrorDetails);
     if (result != MI_RESULT_OK)
     {
-        SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         if (cimErrorDetails && *cimErrorDetails)
             return result;
 
@@ -6949,14 +6936,14 @@ MI_Result CallPerformInventory(
 
     if (File_ExistT(InMOF) != 0)
     {
-    SetLCMStatusReady();
-    return GetCimMIError(MI_RESULT_FAILED, cimErrorDetails, ID_LCMHELPER_INVENTORY_MOF_DOESNT_EXIST);
+        SetLCMStatusReady(lcmContext);
+        return GetCimMIError(MI_RESULT_FAILED, cimErrorDetails, ID_LCMHELPER_INVENTORY_MOF_DOESNT_EXIST);
     }
 
     result = InitializeModuleManager(0, cimErrorDetails, &moduleManager);
     if (result != MI_RESULT_OK)
     {
-        SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         return result;
     }
 
@@ -6964,7 +6951,7 @@ MI_Result CallPerformInventory(
     if (result != MI_RESULT_OK)
     {
         moduleManager->ft->Close(moduleManager, NULL);
-        SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         if (cimErrorDetails && *cimErrorDetails)
             return result;
         
@@ -6978,7 +6965,7 @@ MI_Result CallPerformInventory(
         {
             CleanUpInstanceCache(&inventoryInstances);
             moduleManager->ft->Close(moduleManager, NULL);
-            SetLCMStatusReady();
+            SetLCMStatusReady(lcmContext);
             MI_Instance_Delete(documentIns);
             return result;
         }
@@ -6990,14 +6977,14 @@ MI_Result CallPerformInventory(
     {
         MI_Instance_Delete(documentIns);
         moduleManager->ft->Close(moduleManager, NULL);
-        SetLCMStatusReady();
+        SetLCMStatusReady(lcmContext);
         return GetCimMIError(MI_RESULT_INVALID_PARAMETER, cimErrorDetails, ID_LCMHELPER_NORESOURCESPECIFIED);
     }
 
-    SetMessageInContext(ID_OUTPUT_OPERATION_START,ID_OUTPUT_ITEM_INVENTORY,&lcmContext);
-    LCM_BuildMessage(&lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+    SetMessageInContext(ID_OUTPUT_OPERATION_START, ID_OUTPUT_ITEM_INVENTORY, lcmContext);
+    LCM_BuildMessage(lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
 
-    result = PerformInventory(&lcmContext, 0, &inventoryInstances, moduleManager, documentIns, &inventoryResultInstances, cimErrorDetails);
+    result = PerformInventory(lcmContext, 0, &inventoryInstances, moduleManager, documentIns, &inventoryResultInstances, cimErrorDetails);
     
     MI_Instance_Delete(documentIns);
 
@@ -7006,8 +6993,8 @@ MI_Result CallPerformInventory(
     CleanUpInstanceCache(&inventoryInstances);
     if (result != MI_RESULT_OK)
     {
-    SetLCMStatusReady();
-    if (cimErrorDetails && *cimErrorDetails)
+        SetLCMStatusReady(lcmContext);
+        if (cimErrorDetails && *cimErrorDetails)
             return result;
     
         return GetCimMIError(result, cimErrorDetails, ID_LCMHELPER_INVENTORY_CONF_FAILED);

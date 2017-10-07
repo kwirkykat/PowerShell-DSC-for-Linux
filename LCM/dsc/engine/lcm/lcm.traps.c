@@ -76,21 +76,23 @@ MI_Result NITS_CALL LCMTEST_LCM_Pull_Execute()
 #endif
 }
 
-MI_Result LCMTest_CallSetConfiguration(_In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
-                               MI_Uint32 dataSize,
-                               MI_Uint32 dwFlags,
-                                MI_Boolean force,
-                               _In_ MI_Context* context,
-                               _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
+MI_Result LCMTest_CallSetConfiguration(LCMProviderContext *lcmContext,
+    _In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
+    MI_Uint32 dataSize,
+    MI_Uint32 dwFlags,
+    MI_Boolean force,
+    _In_ MI_Context* context,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
 {
-    return CallSetConfiguration(ConfigData, dataSize, dwFlags, force, context, cimErrorDetails);
+    return CallSetConfiguration(lcmContext, ConfigData, dataSize, dwFlags, force, context, cimErrorDetails);
 }
 
-MI_Result LCMTest_CallConsistencyEngine(_In_ MI_Context* context,
-                                _In_ MI_Uint32 invokeMode,
-                                _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
+MI_Result LCMTest_CallConsistencyEngine(LCMProviderContext *lcmContext,
+    _In_ MI_Context* context,
+    _In_ MI_Uint32 invokeMode,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
 {
-    return CallConsistencyEngine(context, invokeMode, cimErrorDetails);
+    return CallConsistencyEngine(lcmContext, context, invokeMode, cimErrorDetails);
 }
 
 MI_Result LCMTest_TaskHelper(_In_z_ MI_Char* taskPath,

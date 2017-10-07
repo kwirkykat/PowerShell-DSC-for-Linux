@@ -1114,6 +1114,7 @@ NitsDRTCommonTest1(TestConsistencyEngine, InitLCM, PtrVal)
     MI_Char * pendingPath = NULL;
     MI_Char * currentPath = NULL;
     MI_Result miResult = MI_RESULT_OK;
+    LCMProviderContext lcmProviderContext = {0};
     NitsTrapHandle h = NitsContext()->_InitLCM->_Ptr->ptr;
 
         DeleteConfig(CONFIGURATION_PENDING, h);
@@ -1136,14 +1137,14 @@ NitsDRTCommonTest1(TestConsistencyEngine, InitLCM, PtrVal)
     }
 
     //Delete current
-    File_RemoveT(currentPath );
+    File_RemoveT(currentPath);
     //copy to Pending
-    if(NitsAssert(File_CopyT(TEST_CONFIG_FILE, pendingPath) == 0, MI_T("CopyFile failed")))
+    if (NitsAssert(File_CopyT(TEST_CONFIG_FILE, pendingPath) == 0, MI_T("CopyFile failed")))
     {
-        if(NitsCompare(NitsGetTrap(h, LCMTraps, _LCMTest_CallConsistencyEngine)(NULL, 1, &cimErrorDetails), MI_RESULT_OK, MI_T("CallConsistencyEngine failed")))
+        if (NitsCompare(NitsGetTrap(h, LCMTraps, _LCMTest_CallConsistencyEngine)(&lcmProviderContext, NULL, 1, &cimErrorDetails), MI_RESULT_OK, MI_T("CallConsistencyEngine failed")))
         {
-            NitsAssert( File_ExistT(pendingPath) == -1 , MI_T("Pending file still exist"));
-            NitsAssert( File_ExistT(currentPath) == 0 , MI_T("Current file does not exist"));            
+            NitsAssert(File_ExistT(pendingPath) == -1 , MI_T("Pending file still exist"));
+            NitsAssert(File_ExistT(currentPath) == 0 , MI_T("Current file does not exist"));            
         }
     }
 
@@ -1163,6 +1164,7 @@ NitsDRTCommonTest1(TestSendConfiguration_SaveToPendingOnly, InitLCM, PtrVal)
     MI_Char * currentPath = NULL;
     MI_Uint8 *pbuffer = NULL;
     MI_Uint32 size = 0;
+    LCMProviderContext lcmProviderContext = {0};
     NitsTrapHandle h = NitsContext()->_InitLCM->_Ptr->ptr;
     MI_Result miResult = ReadTestFile(TEST_CONFIG_FILE, &pbuffer, &size);
     NitsAssert(miResult == MI_RESULT_OK, MI_T("ReadTestFile Failed"));
@@ -1179,7 +1181,7 @@ NitsDRTCommonTest1(TestSendConfiguration_SaveToPendingOnly, InitLCM, PtrVal)
     //Delete current
     File_RemoveT(currentPath );
     File_RemoveT(pendingPath );
-    if(NitsCompare(NitsGetTrap(h, LCMTraps, _LCMTest_CallSetConfiguration)(pbuffer, size, LCM_SETFLAGS_SAVETOPENDINGONLY, MI_FALSE, NULL, &cimErrorDetails), MI_RESULT_OK, MI_T("CallSetConfiguration failed")))
+    if(NitsCompare(NitsGetTrap(h, LCMTraps, _LCMTest_CallSetConfiguration)(&lcmProviderContext, pbuffer, size, LCM_SETFLAGS_SAVETOPENDINGONLY, MI_FALSE, NULL, &cimErrorDetails), MI_RESULT_OK, MI_T("CallSetConfiguration failed")))
     {
         NitsAssert( File_ExistT(pendingPath) == 0 , MI_T("Pending file does not exist"));
         NitsAssert( File_ExistT(currentPath) == -1 , MI_T("Current file still exist"));            

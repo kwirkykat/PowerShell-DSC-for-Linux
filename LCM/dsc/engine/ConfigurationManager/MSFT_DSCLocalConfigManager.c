@@ -111,6 +111,8 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_SendConfiguration(
     MI_UNREFERENCED_PARAMETER(instanceName);
     MI_UNREFERENCED_PARAMETER(in);
 
+    LCMProviderContext *lcmContext;
+
     if(!in->ConfigurationData.exists)
     {
         MI_Context_PostResult(context, MI_RESULT_INVALID_PARAMETER);
@@ -136,8 +138,12 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_SendConfiguration(
 
     GetRealBufferIndex( &(in->ConfigurationData.value), &bufferIndex);
 
-    miResult = CallSetConfiguration(in->ConfigurationData.value.data + bufferIndex, 
+    miResult = InitializeLCMContext(&lcmContext);
+
+    miResult = CallSetConfiguration(lcmContext, in->ConfigurationData.value.data + bufferIndex, 
                             in->ConfigurationData.value.size - bufferIndex, LCM_SETFLAGS_SAVETOPENDINGONLY, context, &cimErrorDetails); 
+
+    FreeLCMContext(lcmContext);
 
     if (!SetThreadToken(NULL, m_clientThreadToken))
     {
@@ -157,7 +163,6 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_SendConfiguration(
     }
 
     MI_Context_PostResult(context, MI_RESULT_OK);
-
 }
 
 void MI_CALL MSFT_DSCLocalConfigManager_Invoke_SendConfigurationApply(
@@ -180,6 +185,8 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_SendConfigurationApply(
     MI_UNREFERENCED_PARAMETER(instanceName);
     MI_UNREFERENCED_PARAMETER(in);
 
+    LCMProviderContext *lcmContext;
+
     if(!in->ConfigurationData.exists)
     {
         MI_Context_PostResult(context, MI_RESULT_INVALID_PARAMETER);
@@ -205,8 +212,12 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_SendConfigurationApply(
 
     GetRealBufferIndex( &(in->ConfigurationData.value), &bufferIndex);
 
-    miResult = CallSetConfiguration(in->ConfigurationData.value.data + bufferIndex, 
+    miResult = InitializeLCMContext(&lcmContext);
+
+    miResult = CallSetConfiguration(lcmContext, in->ConfigurationData.value.data + bufferIndex, 
                             in->ConfigurationData.value.size - bufferIndex, LCM_SETFLAGS_DEFAULT, context, &cimErrorDetails); 
+
+    FreeLCMContext(lcmContext);
 
     if (!SetThreadToken(NULL, m_clientThreadToken))
     {
@@ -291,6 +302,7 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_GetConfiguration(
     MI_UNREFERENCED_PARAMETER(instanceName);
     MI_UNREFERENCED_PARAMETER(in);
 
+    LCMProviderContext *lcmContext;
             
     if(!in->configurationData.exists)
     {
@@ -325,10 +337,19 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_GetConfiguration(
     }   
 
     GetRealBufferIndex( &(in->configurationData.value), &bufferIndex);
-    miResult = CallGetConfiguration(in->configurationData.value.data + bufferIndex, 
-                                in->configurationData.value.size - bufferIndex, &outInstances, 
-                                context, &cimErrorDetails);
-    if(miResult != MI_RESULT_OK)
+
+    miResult = InitializeLCMContext(&lcmContext);
+
+    miResult = CallGetConfiguration(lcmContext,
+        in->configurationData.value.data + bufferIndex, 
+        in->configurationData.value.size - bufferIndex,
+        &outInstances, 
+        context,
+        &cimErrorDetails);
+
+    FreeLCMContext(lcmContext);
+
+    if (miResult != MI_RESULT_OK)
     {
         MI_PostCimError(context, cimErrorDetails);
         MI_Instance_Delete(cimErrorDetails);
@@ -429,7 +450,9 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_ApplyConfiguration(
     MI_UNREFERENCED_PARAMETER(instanceName);
     MI_UNREFERENCED_PARAMETER(in);
 
-    if(!OpenThreadToken(GetCurrentThread(), TOKEN_IMPERSONATE | TOKEN_QUERY | TOKEN_DUPLICATE, TRUE, &m_clientThreadToken))
+    LCMProviderContext *lcmContext;
+
+    if (!OpenThreadToken(GetCurrentThread(), TOKEN_IMPERSONATE | TOKEN_QUERY | TOKEN_DUPLICATE, TRUE, &m_clientThreadToken))
     {
         GetCimWin32Error(GetLastError(), &cimErrorDetails, ID_LCMHELPER_THREADIMPERSONATION_FAILED);
         MI_PostCimError(context, cimErrorDetails);
@@ -457,8 +480,11 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_ApplyConfiguration(
         return;
     }       
 
+    miResult = InitializeLCMContext(&lcmContext);
 
-    miResult = CallConsistencyEngine(context, &cimErrorDetails); 
+    miResult = CallConsistencyEngine(lcmContext, context, &cimErrorDetails);
+
+    FreeLCMContext(lcmContext);
 
     if(miResult != MI_RESULT_OK)
     {
@@ -504,7 +530,6 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_ApplyConfiguration(
     }    
 
     MI_Context_PostResult(context, MI_RESULT_OK);
-
 }
 
 void MI_CALL MSFT_DSCLocalConfigManager_Invoke_PullConfigurationNow(
