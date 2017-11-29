@@ -143,17 +143,19 @@ void MI_CALL MSFT_DSCLocalConfigurationManager_Invoke_SendMetaConfigurationApply
     _In_opt_ const MSFT_DSCLocalConfigurationManager_SendMetaConfigurationApply* in)
 {
     SetJobId();
+    
     // Debug Log 
-    DSC_EventWriteMSFTMethodParameters(__WFUNCTION__,className,methodName,nameSpace);    
+    DSC_EventWriteMSFTMethodParameters(__WFUNCTION__, className, methodName, nameSpace);    
 
     if (!in || !in->ConfigurationData.exists)
     {
         MI_Context_PostResult(context, MI_RESULT_INVALID_PARAMETER);
         ResetJobId();
-        return;        
     }
-    Invoke_SendMetaConfigurationApply(self, context, nameSpace, className, methodName, instanceName, in);
-
+    else
+    {
+        Invoke_SendMetaConfigurationApply(self, context, nameSpace, className, methodName, instanceName, in);
+    }
 }
 
 void MI_CALL MSFT_DSCLocalConfigurationManager_Invoke_GetMetaConfiguration(

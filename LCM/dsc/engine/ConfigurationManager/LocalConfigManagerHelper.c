@@ -153,7 +153,8 @@ MI_Result InitializeLCMContext(LCMProviderContext **lcmContext)
 
     /****************************/
     // allocate memory for one configuration status instance
-    if ((lcmProviderContext.configurationStatus.data = (MSFT_DSCConfigurationStatus **)DSC_malloc(sizeof(MSFT_DSCConfigurationStatus*), NitsHere())) == NULL)
+    lcmProviderContext.configurationStatus.data = (MSFT_DSCConfigurationStatus **)DSC_malloc(sizeof(MSFT_DSCConfigurationStatus*), NitsHere())
+    if (lcmProviderContext.configurationStatus.data == NULL)
     {
         result = MI_RESULT_SERVER_LIMITS_EXCEEDED;
         GOTO_CLEANUP_AND_THROW_ERROR_IF_FAILED(result, result, ID_LCMHELPER_MEMORY_ERROR, &extendedError, Exit);
@@ -894,7 +895,7 @@ MI_Result CallSetConfiguration(
     _In_ MI_Context* context,
     _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
 {
-    MI_Result r = MI_RESULT_OK;
+    MI_Result result = MI_RESULT_OK;
     MI_Instance *metaConfigInstance = NULL;
     MI_Value configModeValue;
 
@@ -904,11 +905,11 @@ MI_Result CallSetConfiguration(
     lcmContext->executionMode = (LCM_EXECUTIONMODE_OFFLINE | LCM_EXECUTIONMODE_ONLINE);
     lcmContext->context = (void*)context;
 
-    r = GetMetaConfig(&metaConfigInstance);
-    EH_CheckResult(r);
+    result = GetMetaConfig(&metaConfigInstance);
+    EH_CheckResult(result);
 
-    r = DSC_MI_Instance_GetElement(metaConfigInstance, MSFT_DSCMetaConfiguration_ConfigurationMode, &configModeValue, NULL, NULL, NULL);
-    EH_CheckResult(r);
+    result = DSC_MI_Instance_GetElement(metaConfigInstance, MSFT_DSCMetaConfiguration_ConfigurationMode, &configModeValue, NULL, NULL, NULL);
+    EH_CheckResult(result);
 
     // We tell user that LCM is running in MonitorOnly mode and will be testing only
     if (ShouldMonitorOnly(configModeValue.string) && !(dwFlags & LCM_SET_METACONFIG))
@@ -929,7 +930,7 @@ MI_Result CallSetConfiguration(
 
     SetMessageInContext(ID_OUTPUT_OPERATION_START, ID_OUTPUT_ITEM_SET, lcmContext);
     LCM_BuildMessage(lcmContext, ID_OUTPUT_EMPTYSTRING, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
-    r = SetConfiguration(ConfigData, dataSize, force, lcmContext, dwFlags, cimErrorDetails);
+    result = SetConfiguration(ConfigData, dataSize, force, lcmContext, dwFlags, cimErrorDetails);
 
 EH_UNWIND:
     // No need to output set End when LCM is running in 'MonitorOnly' Mode.
@@ -942,7 +943,7 @@ EH_UNWIND:
     //Debug Log 
     DSC_EventWriteMethodEnd(__WFUNCTION__);
 
-    return r;
+    return result;
 }
 
 MI_Result CallRestoreConfiguration(
@@ -1897,7 +1898,7 @@ MI_Result SetConfiguration(
     MI_Char *partialConfigFileDataStoreLocation = NULL;
 
     //Debug Log 
-    DSC_EventWriteLocalConfigMethodParameters(__WFUNCTION__,dataSize,dwFlags,lcmContext->executionMode);
+    DSC_EventWriteLocalConfigMethodParameters(__WFUNCTION__, dataSize, dwFlags, lcmContext->executionMode);
 
     if (cimErrorDetails == NULL)
     {
@@ -2032,8 +2033,7 @@ MI_Result SetConfiguration(
             SetMessageInContext(ID_OUTPUT_OPERATION_END, ID_OUTPUT_ITEM_SET, lcmContext);
             LCM_BuildMessage(lcmContext, ID_LCM_WRITEMESSAGE_SAVETOPARTIAL, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
 
-Cleanup:
-            
+Cleanup:   
             moduleManager->ft->Close(moduleManager, NULL);
             //If there was a failure, ensure the partial config file(if exists) is deleted.
             if (result != MI_RESULT_OK && partialConfigFileDataStoreLocation != NULL)
@@ -2160,7 +2160,6 @@ Cleanup:
     }
 
     return result;
-
 }
 
 MI_Result ApplyPendingConfig(
@@ -2323,79 +2322,79 @@ MI_Result ApplyConfigGroup(
         _Inout_ MI_Uint32 *resultStatus,
         _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
 {
-        MI_Result r;
-        MI_Value value;
-        MI_Uint32 result_Flags;
-        MI_Char* versionNumber;
+    MI_Result r;
+    MI_Value value;
+    MI_Uint32 result_Flags;
+    MI_Char* versionNumber;
 
-        r = ValidateDocumentInstance(documentIns, cimErrorDetails);
+    r = ValidateDocumentInstance(documentIns, cimErrorDetails);
+    if (r != MI_RESULT_OK)
+    {
+        return r;
+    }
+
+    //If its a metaconfiguration , validate its version
+    if (flags & VALIDATE_METACONFIG_INSTANCE)
+    {
+        r = DSC_MI_Instance_GetElement(documentIns, OMI_ConfigurationDocument_Version, &value, NULL, &result_Flags, NULL);
+        if (r != MI_RESULT_OK || (result_Flags & MI_FLAG_NULL) != 0)
+        {
+            r = MI_RESULT_NOT_FOUND;
+            return GetCimMIError1Param(r, cimErrorDetails, ID_MODMAN_VALIDATE_PROVSCHEMA_NOMANDATORY, OMI_ConfigurationDocument_Version);
+        }
+
+        versionNumber = value.string;
+        //Adding logic to validate if the versions are correctly numbered based on entities of download manager variables.
+
+        //We know version number is not null, since it will enter here only if that is validated
+        r = ValidateVersionNumbersCompatibility(resourceInstances, versionNumber, lcmContext, cimErrorDetails);
         if (r != MI_RESULT_OK)
         {
-                return r;
+            return r;
         }
 
-        //If its a metaconfiguration , validate its version
-        if (flags & VALIDATE_METACONFIG_INSTANCE)
-        {
-                r = DSC_MI_Instance_GetElement(documentIns, OMI_ConfigurationDocument_Version, &value, NULL, &result_Flags, NULL);
-                if (r != MI_RESULT_OK || (result_Flags & MI_FLAG_NULL) != 0)
-                {
-                        r = MI_RESULT_NOT_FOUND;
-                        return GetCimMIError1Param(r, cimErrorDetails, ID_MODMAN_VALIDATE_PROVSCHEMA_NOMANDATORY, OMI_ConfigurationDocument_Version);
-                }
+    }
+    // Check if at least 1 resource was specified in the instance document
+    if (resourceInstances->size == 0)
+    {
+        return GetCimMIError(MI_RESULT_INVALID_PARAMETER, cimErrorDetails, ID_LCMHELPER_NORESOURCESPECIFIED);
+    }
 
-                versionNumber = value.string;
-                //Adding logic to validate if the versions are correctly numbered based on entities of download manager variables.
+    r = SendConfigurationApply(lcmContext, flags, resourceInstances, moduleManager, documentIns, resultStatus, cimErrorDetails);
+    if (r != MI_RESULT_OK)
+    {
+        if (cimErrorDetails && *cimErrorDetails)
+            return r;
 
-                //We know version number is not null, since it will enter here only if that is validated
-                r = ValidateVersionNumbersCompatibility(resourceInstances, versionNumber, lcmContext, cimErrorDetails);
-                if (r != MI_RESULT_OK)
-                {
-                        return r;
-                }
+        return GetCimMIError(r, cimErrorDetails, ID_LCMHELPER_SENDCONFIGAPPLY_ERROR);
+    }
 
-        }
-        // Check if at least 1 resource was specified in the instance document
-        if (resourceInstances->size == 0)
-        {
-                return GetCimMIError(MI_RESULT_INVALID_PARAMETER, cimErrorDetails, ID_LCMHELPER_NORESOURCESPECIFIED);
-        }
+    /*move this out*/
+    if (!(flags & LCM_EXECUTE_TESTONLY) && (DSC_RESTART_SYSTEM_FLAG & *resultStatus))
+    {
+        //Log the message here; log different message depends on the value of RebootNodeIfNeeded(winblue:366265)
+        MI_Value configModeValue;
 
-        r = SendConfigurationApply(lcmContext, flags, resourceInstances, moduleManager, documentIns, resultStatus, cimErrorDetails);
+        r = DSC_MI_Instance_GetElement(metaConfigInstance, MSFT_DSCMetaConfiguration_RebootNodeIfNeeded, &configModeValue, NULL, NULL, NULL);
         if (r != MI_RESULT_OK)
         {
-                if (cimErrorDetails && *cimErrorDetails)
-                        return r;
-
-                return GetCimMIError(r, cimErrorDetails, ID_LCMHELPER_SENDCONFIGAPPLY_ERROR);
+            return r;
         }
 
+        //telling user that reboot is scheduled
+        if (configModeValue.boolean == MI_TRUE)
+        {
+            LCM_BuildMessage(lcmContext, ID_LCM_WRITEMESSAGE_REBOOT, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+        }
+        //telling user that manual reboot is needed
+        else
+        {
+            LCM_BuildMessage(lcmContext, ID_LCM_WRITEMESSAGE_REBOOTMANUALLY, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+        }
         /*move this out*/
-        if (!(flags & LCM_EXECUTE_TESTONLY) && (DSC_RESTART_SYSTEM_FLAG & *resultStatus))
-        {
-                //Log the message here; log different message depends on the value of RebootNodeIfNeeded(winblue:366265)
-                MI_Value configModeValue;
+    }
 
-                r = DSC_MI_Instance_GetElement(metaConfigInstance, MSFT_DSCMetaConfiguration_RebootNodeIfNeeded, &configModeValue, NULL, NULL, NULL);
-                if (r != MI_RESULT_OK)
-                {
-                        return r;
-                }
-
-                //telling user that reboot is scheduled
-                if (configModeValue.boolean == MI_TRUE)
-                {
-                        LCM_BuildMessage(lcmContext, ID_LCM_WRITEMESSAGE_REBOOT, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
-                }
-                //telling user that manual reboot is needed
-                else
-                {
-                        LCM_BuildMessage(lcmContext, ID_LCM_WRITEMESSAGE_REBOOTMANUALLY, EMPTY_STRING, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
-                }
-                /*move this out*/
-        }
-
-        return MI_RESULT_OK;
+    return MI_RESULT_OK;
 }
 
 
@@ -4615,14 +4614,14 @@ MI_Result SetIpAddress(_In_ MSFT_DSCConfigurationStatus *configurationStatus, _I
 }
 
 MI_Result ReportStatusToServer(
-        _In_ LCMProviderContext *lcmContext,
-        _In_opt_z_ const MI_Char * errorMessage,
-        _In_opt_z_ const MI_Char *errorSource,
-        _In_opt_z_ const MI_Char *resourceId,
-        _In_ MI_Uint32 errorCode,
-        _In_ MI_Boolean bLastReport,
-        _In_ MI_Uint32 isStatusReport,
-        _In_opt_ MI_Instance* instanceMIError)
+    _In_ LCMProviderContext *lcmContext,
+    _In_opt_z_ const MI_Char * errorMessage,
+    _In_opt_z_ const MI_Char *errorSource,
+    _In_opt_z_ const MI_Char *resourceId,
+    _In_ MI_Uint32 errorCode,
+    _In_ MI_Boolean bLastReport,
+    _In_ MI_Uint32 isStatusReport,
+    _In_opt_ MI_Instance* instanceMIError)
 {
     MI_Application miApp = MI_APPLICATION_NULL;
     MI_Instance *statusReport = NULL;
@@ -4687,6 +4686,7 @@ MI_Result ReportStatusToServer(
             MI_Application_Close(&miApp);
             return result;
         }
+
         if (statusObject != NULL)
         {
             value.instancea.size = 1;
@@ -4732,6 +4732,7 @@ MI_Result ReportStatusToServer(
     if (lcmContext != NULL && lcmContext->configurationStatus.data != NULL && lcmContext->configurationStatus.size >= 1)
     {
         MSFT_DSCConfigurationStatus *configurationStatus = lcmContext->configurationStatus.data[0];
+
         if (!lcmContext->bNotFirstTimeReport)
         {
             // Set Start Time
@@ -4755,7 +4756,8 @@ MI_Result ReportStatusToServer(
                     MI_Instance_Delete(statusObject);
                     return result;
                 }
-            }*/
+            }
+            */
             // Set NodeName
             if (configurationStatus->HostName.exists)
             {
@@ -4777,7 +4779,8 @@ MI_Result ReportStatusToServer(
                     return result;
 
                 }
-            }*/
+            }
+            */
             // Set LCM version
             if (configurationStatus->LCMVersion.exists)
             {
@@ -6767,7 +6770,7 @@ MI_Result SetLCMStatusReady(LCMProviderContext *lcmContext)
 #endif
     }
 
-    ReportStatusToServer(lcmContext, NULL, NULL, NULL, 0, MI_TRUE, /*isStatusReport*/ 1, (MI_Instance*)NULL);
+    result = ReportStatusToServer(lcmContext, NULL, NULL, NULL, 0, MI_TRUE, /*isStatusReport*/ 1, (MI_Instance*)NULL);
 
     // errors in above invocation are silently ignored since failure of updating status should not block other operations
     return MI_RESULT_OK;

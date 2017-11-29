@@ -218,15 +218,25 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_SendConfigurationApply_Internal(void *p
         return 0;
     }
 
-    GetRealBufferIndex( &args->data, &bufferIndex);
+    GetRealBufferIndex(&args->data, &bufferIndex);
 
     miResult = InitializeLCMContext(&lcmContext);
+    if (miResult != MI_RESULT_OK)
+    {
+        GetCimMIError(miResult, &cimErrorDetails, ID_LCMHELPER_CONSTRUCTGET_FAILED);
+        goto ExitWithError;
+    }
 
     start = CPU_GetTimeStamp();
-    SetLCMStatusBusy(lcmContext);
-    miResult = CallSetConfiguration(lcmContext, args->data.data + bufferIndex, 
-        args->data.size - bufferIndex, args->flag, 
-        args->force, args->context, &cimErrorDetails); 
+
+    miResult = SetLCMStatusBusy(lcmContext);
+    if (miResult != MI_RESULT_OK)
+    {
+        GetCimMIError(miResult, &cimErrorDetails, ID_LCMHELPER_CONSTRUCTGET_FAILED);
+        goto ExitWithError;
+    }
+
+    miResult = CallSetConfiguration(lcmContext, args->data.data + bufferIndex, args->data.size - bufferIndex, args->flag, args->force, args->context, &cimErrorDetails); 
     if (miResult != MI_RESULT_OK)
     {
         goto ExitWithError;
@@ -237,7 +247,8 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_SendConfigurationApply_Internal(void *p
     {
         GetCimMIError(miResult, &cimErrorDetails, ID_LCMHELPER_CONSTRUCTGET_FAILED);
         goto ExitWithError;
-    } 
+    }
+
     miResult = MSFT_DSCLocalConfigurationManager_SendConfigurationApply_Set_MIReturn(&outputObject, 0);
     if (miResult != MI_RESULT_OK)
     {
@@ -250,9 +261,9 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_SendConfigurationApply_Internal(void *p
     MSFT_DSCLocalConfigurationManager_SendConfigurationApply_Destruct(&outputObject);    
 
     // Stop the clock and measure time taken for this operation
-    finish=CPU_GetTimeStamp();
-    duration = (MI_Real64)(finish- start) / TIME_PER_SECONND;
-    LCM_WriteMessage_Internal_TimeTaken(args->context,EMPTY_STRING, ID_LCM_TIMEMESSAGE,  ID_OUTPUT_ITEM_SET,(const MI_Real64)duration, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+    finish = CPU_GetTimeStamp();
+    duration = (MI_Real64)(finish - start) / TIME_PER_SECONND;
+    LCM_WriteMessage_Internal_TimeTaken(args->context,EMPTY_STRING, ID_LCM_TIMEMESSAGE, ID_OUTPUT_ITEM_SET, (const MI_Real64)duration, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
 
     EndLcmOperation();
     SetLCMStatusReady(lcmContext);
@@ -264,7 +275,7 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_SendConfigurationApply_Internal(void *p
     ResetJobId();
     PAL_Free(args->data.data);
     PAL_Free(args);    
-    return 0;
+    return 1;
 
 ExitWithError:
     ResetJobId();
@@ -1412,39 +1423,42 @@ void Invoke_SendMetaConfigurationApply(
 #if defined(BUILD_OMS)
     if (RunningAsRoot() == MI_TRUE)
     {
-	miResult = GetCimMIError(MI_RESULT_FAILED, &cimErrorDetails, ID_CANNOT_RUN_OMSCONFIG_AS_ROOT);
-	MI_PostCimError(context, cimErrorDetails);
+	    miResult = GetCimMIError(MI_RESULT_FAILED, &cimErrorDetails, ID_CANNOT_RUN_OMSCONFIG_AS_ROOT);
+	    MI_PostCimError(context, cimErrorDetails);
         MI_Instance_Delete(cimErrorDetails);
-	return;
+	    return;
     }
 #else
     if (RunningAsRoot() == MI_FALSE)
     {
-	miResult = GetCimMIError(MI_RESULT_FAILED, &cimErrorDetails, ID_CANNOT_RUN_DSC_AS_NONROOT);
-	MI_PostCimError(context, cimErrorDetails);
+	    miResult = GetCimMIError(MI_RESULT_FAILED, &cimErrorDetails, ID_CANNOT_RUN_DSC_AS_NONROOT);
+	    MI_PostCimError(context, cimErrorDetails);
         MI_Instance_Delete(cimErrorDetails);
-	return;
+	    return;
     }
 #endif
     
     MI_Uint8 *dataValue = NULL;
-    Context_Invoke_Basic *args = (Context_Invoke_Basic*)DSC_malloc( sizeof(Context_Invoke_Basic), NitsHere());
-    if( args == NULL)
+
+    Context_Invoke_Basic *args = (Context_Invoke_Basic*)DSC_malloc(sizeof(Context_Invoke_Basic), NitsHere());
+    if (args == NULL)
     {
         miResult = GetCimMIError(MI_RESULT_SERVER_LIMITS_EXCEEDED, &cimErrorDetails, ID_LCMHELPER_MEMORY_ERROR);
         MI_PostCimError(context, cimErrorDetails);
         MI_Instance_Delete(cimErrorDetails);
         return;
     }
+
     dataValue = (MI_Uint8*)DSC_malloc( sizeof(MI_Uint8) * in->ConfigurationData.value.size, NitsHere());
-    if( args == NULL)
+    if (dataValue == NULL)
     {
         PAL_Free(args);
         miResult = GetCimMIError(MI_RESULT_SERVER_LIMITS_EXCEEDED, &cimErrorDetails, ID_LCMHELPER_MEMORY_ERROR);
         MI_PostCimError(context, cimErrorDetails);
         MI_Instance_Delete(cimErrorDetails);
         return;
-    }    
+    }
+
     memcpy(dataValue, in->ConfigurationData.value.data, in->ConfigurationData.value.size);
     args->context = context;
     args->methodName = methodName;
@@ -1453,7 +1467,6 @@ void Invoke_SendMetaConfigurationApply(
     args->data.size = in->ConfigurationData.value.size;
     args->flag = GetCallSetConfigurationFlags(context) | LCM_SET_METACONFIG;  
 
-    {
 	LCMTaskNode * newNode = (LCMTaskNode*)DSC_malloc(sizeof(LCMTaskNode), NitsHere());
 	newNode->task = Invoke_SendConfigurationApply_Internal;
 	newNode->params = args;
@@ -1467,7 +1480,6 @@ void Invoke_SendMetaConfigurationApply(
 	    g_TaskQueueExists = 1;
 	}
 	pthread_mutex_unlock(&g_TaskQueueMutex);
-    }
 }
 
 
