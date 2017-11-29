@@ -153,7 +153,7 @@ MI_Result InitializeLCMContext(LCMProviderContext **lcmContext)
 
     /****************************/
     // allocate memory for one configuration status instance
-    lcmProviderContext.configurationStatus.data = (MSFT_DSCConfigurationStatus **)DSC_malloc(sizeof(MSFT_DSCConfigurationStatus*), NitsHere())
+    lcmProviderContext.configurationStatus.data = (MSFT_DSCConfigurationStatus **)DSC_malloc(sizeof(MSFT_DSCConfigurationStatus*), NitsHere());
     if (lcmProviderContext.configurationStatus.data == NULL)
     {
         result = MI_RESULT_SERVER_LIMITS_EXCEEDED;
