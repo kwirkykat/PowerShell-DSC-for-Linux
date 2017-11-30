@@ -77,458 +77,452 @@ extern "C"
 {
 #endif
 
-    MI_Result InitHandler(_In_z_ const MI_Char* methodName, _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result InitHandler(_In_z_ const MI_Char* methodName, _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result UnInitHandler(_Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result UnInitHandler(_Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result InitializeLCMContext(LCMProviderContext **lcmContext);
+MI_Result InitializeLCMContext(LCMProviderContext **lcmContext, MI_Context *miContext);
 
-    void FreeLCMContext(LCMProviderContext *lcmContext);
+void FreeLCMContext(LCMProviderContext *lcmContext);
 
-    MI_Result ApplyConfig(_In_ LCMProviderContext *lcmContext,
-                             _In_z_ const MI_Char *configFileLocation,
-                             _In_ ModuleManager *moduleManager, 
-                             _In_ MI_Uint32 flags,
-                             _Inout_ MI_Uint32 *resultStatus,
-                            _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result ApplyConfig(_In_ LCMProviderContext *lcmContext,
+                            _In_z_ const MI_Char *configFileLocation,
+                            _In_ ModuleManager *moduleManager, 
+                            _In_ MI_Uint32 flags,
+                            _Inout_ MI_Uint32 *resultStatus,
+                        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result ApplyPendingConfig(_In_ LCMProviderContext *lcmContext,
-                         _In_ ModuleManager *moduleManager,
-                         _In_ MI_Uint32 flags,
-                         _Inout_ MI_Uint32 *resultStatus,
-                         _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result ApplyPendingConfig(_In_ LCMProviderContext *lcmContext,
+                        _In_ ModuleManager *moduleManager,
+                        _In_ MI_Uint32 flags,
+                        _Inout_ MI_Uint32 *resultStatus,
+                        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result ApplyCurrentConfig(_In_ LCMProviderContext *lcmContext,
-                         _In_ ModuleManager *moduleManager, 
-                         _In_ MI_Uint32 flags,
-                         _Inout_ MI_Uint32 *resultStatus,
-                         _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result ApplyCurrentConfig(_In_ LCMProviderContext *lcmContext,
+                        _In_ ModuleManager *moduleManager, 
+                        _In_ MI_Uint32 flags,
+                        _Inout_ MI_Uint32 *resultStatus,
+                        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result ApplyMetaConfig(_In_ LCMProviderContext *lcmContext,
-        _In_ ModuleManager *moduleManager, 
-        _In_ MI_Uint32 flags,
-        _Inout_ MI_Uint32 *resultStatus,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result DoPullServerRefresh(
-        _In_ MI_Instance *metaConfigInstance,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-        
-
-        MI_Result UpdateMetaConfigWithLCMState(_In_z_ MI_Uint32 *lcmStatusCode, _Inout_ MI_Instance *metaConfigInstance);
-
-    MI_Result UpdateMetaConfigWithCertificateThumbprint(_In_z_ MI_Char *certificateThumbprint, _Inout_ MI_Instance *metaConfigInstance,
-                                            _Out_ MI_Boolean *bMetaConfigUpdated, _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result UpdateMetaConfigForWebDownloadManager(_In_z_ MI_Char *certificateThumbprint, _Inout_ MI_Instance *metaConfigInstance, 
-                            _Inout_ MI_InstanceA *customData, _Inout_ MI_Boolean *bMetaConfigUpdated,
-                            _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
-
-    MI_Result RegisterTask(_In_ MI_Instance *currentMetaConfigInstance, _In_z_ const MI_Char *propName, _In_z_ const MI_Char *taskName,
-                            _In_ MI_Uint32 defaultValue, _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
-
-    MI_Result IsRegisterdForPull(_In_ MI_Instance *currentMetaConfigInstance, _Out_ MI_Boolean *isPullEnabled, _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
-
-    MI_Result SaveFile(_In_z_ const MI_Char* filePath,
-        _In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
-        MI_Uint32 dataSize,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result ClearBuiltinProvCache(
-    _In_z_ const MI_Char* cachePath,
+MI_Result ApplyMetaConfig(_In_ LCMProviderContext *lcmContext,
+    _In_ ModuleManager *moduleManager, 
+    _In_ MI_Uint32 flags,
+    _Inout_ MI_Uint32 *resultStatus,
     _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result LoadFromPullRunLogFile(_Out_ MI_Uint32 *lastRun, _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result DoPullServerRefresh(
+    _In_ MI_Instance *metaConfigInstance,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
     
-    MI_Result SavePullRunLogFile(_In_ MI_Uint32 maxRun, _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result RetryDeleteFile(_In_z_ const MI_Char* filePath);
+MI_Result UpdateMetaConfigWithLCMState(_In_z_ MI_Uint32 *lcmStatusCode, _Inout_ MI_Instance *metaConfigInstance);
 
-    MI_Result SaveMetaConfig(_In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
-        MI_Uint32 dataSize,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result UpdateMetaConfigWithCertificateThumbprint(_In_z_ MI_Char *certificateThumbprint, _Inout_ MI_Instance *metaConfigInstance,
+                                        _Out_ MI_Boolean *bMetaConfigUpdated, _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result CallSetConfiguration(LCMProviderContext *lcmContext,
-        _In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
-        MI_Uint32 dataSize,
-        MI_Uint32 dwFlags,
-        MI_Boolean force,
-        _In_ MI_Context* context,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result UpdateMetaConfigForWebDownloadManager(_In_z_ MI_Char *certificateThumbprint, _Inout_ MI_Instance *metaConfigInstance, 
+                        _Inout_ MI_InstanceA *customData, _Inout_ MI_Boolean *bMetaConfigUpdated,
+                        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
 
-    MI_Result CallPerformInventory(
-        LCMProviderContext *lcmContext,
-        _In_ MI_Char * InMOF,
-        _Inout_ MI_InstanceA *outInstances,
-        _In_ MI_Context* context,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-    
-    MI_Result CallRestoreConfiguration(LCMProviderContext *lcmContext,
-        MI_Uint32 dwFlags,
-        _In_ MI_Context* context,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result RegisterTask(_In_ MI_Instance *currentMetaConfigInstance, _In_z_ const MI_Char *propName, _In_z_ const MI_Char *taskName,
+                        _In_ MI_Uint32 defaultValue, _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
 
-    MI_Result CallGetConfiguration(LCMProviderContext *lcmContext,
-        _In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
-        MI_Uint32 dataSize,
-        _Inout_ MI_InstanceA *outInstances,
-        _In_ MI_Context* context,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result IsRegisterdForPull(_In_ MI_Instance *currentMetaConfigInstance, _Out_ MI_Boolean *isPullEnabled, _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
 
-    MI_Result CallTestConfiguration(LCMProviderContext *lcmContext,
-        _Out_ MI_Boolean *testStatus, 
-        _Inout_ MI_StringA *resourceId,
-        _In_ MI_Context* context,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
+MI_Result SaveFile(_In_z_ const MI_Char* filePath,
+    _In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
+    MI_Uint32 dataSize,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result CallConsistencyEngine(LCMProviderContext *lcmContext,
-        _In_ MI_Context* context,
-        _In_ MI_Uint32 invokeMode,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-    
-    MI_Result RunConsistencyEngine(LCMProviderContext *lcmContext,
-        _In_ MI_Context* context,
-        _In_ MI_Uint32 flags,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
-    
-    MI_Result SetConfiguration(_In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
-        MI_Uint32 dataSize,
-        MI_Boolean force,
-        _In_ LCMProviderContext *lcmContext,
-        MI_Uint32 dwFlags,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result ClearBuiltinProvCache(
+_In_z_ const MI_Char* cachePath,
+_Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result ExpandPath(_In_z_ const MI_Char * pathIn,
-        _Outptr_result_maybenull_z_ MI_Char **expandedPath,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result LoadFromPullRunLogFile(_Out_ MI_Uint32 *lastRun, _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result CopyConfigurationFile(_In_z_ const MI_Char *locationFrom,
-        _In_z_ const MI_Char *locationTo,
-        MI_Boolean backUpNeeded,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result SavePullRunLogFile(_In_ MI_Uint32 maxRun, _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result CopyConfigAndRemoveSource(_In_z_ const MI_Char *sourceConfigFileName,
-        _In_z_ const MI_Char *destinationConfigFileName,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result RetryDeleteFile(_In_z_ const MI_Char* filePath);
 
-    MI_Result GetFullPath(_In_z_ const MI_Char* directoryName,
-        _In_z_ const MI_Char *fileName,
-        _Outptr_result_maybenull_z_ MI_Char **fullPath,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result SaveMetaConfig(_In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
+    MI_Uint32 dataSize,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result ValidateConfigurationDirectory(_Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-    
-    MI_Result ProcessPartialConfigurations(
+MI_Result CallSetConfiguration(
+    LCMProviderContext *lcmContext,
+    _In_reads_bytes_(dataSize) const MI_Uint8* configData,
+    MI_Uint32 dataSize,
+    MI_Uint32 dwFlags,
+    MI_Boolean force,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result CallPerformInventory(
+    LCMProviderContext *lcmContext,
+    _In_ MI_Char * InMOF,
+    _Inout_ MI_InstanceA *outInstances,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result CallRestoreConfiguration(LCMProviderContext *lcmContext,
+    MI_Uint32 dwFlags,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result CallGetConfiguration(LCMProviderContext *lcmContext,
+    _In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
+    MI_Uint32 dataSize,
+    _Inout_ MI_InstanceA *outInstances,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result CallTestConfiguration(LCMProviderContext *lcmContext,
+    _Out_ MI_Boolean *testStatus, 
+    _Inout_ MI_StringA *resourceId,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
+
+MI_Result CallConsistencyEngine(LCMProviderContext *lcmContext,
+    _In_ MI_Uint32 invokeMode,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result RunConsistencyEngine(LCMProviderContext *lcmContext,
+    _In_ MI_Uint32 flags,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
+
+MI_Result SetConfiguration(_In_reads_bytes_(dataSize) const MI_Uint8* ConfigData,
+    MI_Uint32 dataSize,
+    MI_Boolean force,
+    _In_ LCMProviderContext *lcmContext,
+    MI_Uint32 dwFlags,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result ExpandPath(_In_z_ const MI_Char * pathIn,
+    _Outptr_result_maybenull_z_ MI_Char **expandedPath,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result CopyConfigurationFile(_In_z_ const MI_Char *locationFrom,
+    _In_z_ const MI_Char *locationTo,
+    MI_Boolean backUpNeeded,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result CopyConfigAndRemoveSource(_In_z_ const MI_Char *sourceConfigFileName,
+    _In_z_ const MI_Char *destinationConfigFileName,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result GetFullPath(_In_z_ const MI_Char* directoryName,
+    _In_z_ const MI_Char *fileName,
+    _Outptr_result_maybenull_z_ MI_Char **fullPath,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result ValidateConfigurationDirectory(_Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result ProcessPartialConfigurations(
+    _In_ LCMProviderContext *lcmContext,
+    _In_ ModuleManager *moduleManager,
+    _In_ MI_Uint32 flags,
+    _Inout_ MI_Uint32 *resultStatus,
+    _In_ MI_Result(*ConfigurationProcessor)
+    (
         _In_ LCMProviderContext *lcmContext,
         _In_ ModuleManager *moduleManager,
         _In_ MI_Uint32 flags,
+        _In_ MI_Instance * documentIns,
+        _In_ MI_InstanceA *resourceInstances,
+        _In_ MI_Instance *metaConfigInstance,
         _Inout_ MI_Uint32 *resultStatus,
-        _In_ MI_Result(*ConfigurationProcessor)
-        (
-            _In_ LCMProviderContext *lcmContext,
-            _In_ ModuleManager *moduleManager,
-            _In_ MI_Uint32 flags,
-            _In_ MI_Instance * documentIns,
-            _In_ MI_InstanceA *resourceInstances,
-            _In_ MI_Instance *metaConfigInstance,
-            _Inout_ MI_Uint32 *resultStatus,
-            _Outptr_result_maybenull_ MI_Instance **cimErrorDetails
-            ),
-        _In_ MI_Instance *metaConfigInstance,
-        _In_ MI_InstanceA* resourceInstances,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails
+        ),
+    _In_ MI_Instance *metaConfigInstance,
+    _In_ MI_InstanceA* resourceInstances,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result DependPartialConfigExist(_In_ MI_Instance *partialConfig,
-                                       _In_ HashMap* self,
-                                       _Out_ MI_Boolean *dependsOnExist,
-                                       _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
-    
-    /*Function to merge N partial configurations.*/
-    MI_Result MergePartialConfigurations(_In_ LCMProviderContext *lcmContext, 
-        _In_ ModuleManager* moduleManager,
-        _In_z_ const MI_Char* targetMofFile,
-        _In_z_ const MI_Char* targetBaseDocumentMergedFile,
-        _Outptr_result_maybenull_ MI_Instance** cimErrorDetails);
+MI_Result DependPartialConfigExist(_In_ MI_Instance *partialConfig,
+                                    _In_ HashMap* self,
+                                    _Out_ MI_Boolean *dependsOnExist,
+                                    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
 
-    void GetRealBufferIndex(_In_ const MI_ConstUint8A *buffer, 
-        _Out_ MI_Uint32 *bufferIndex);
+/*Function to merge N partial configurations.*/
+MI_Result MergePartialConfigurations(_In_ LCMProviderContext *lcmContext, 
+    _In_ ModuleManager* moduleManager,
+    _In_z_ const MI_Char* targetMofFile,
+    _In_z_ const MI_Char* targetBaseDocumentMergedFile,
+    _Outptr_result_maybenull_ MI_Instance** cimErrorDetails);
 
-    void LCM_WriteMessageInfo(
+void GetRealBufferIndex(_In_ const MI_ConstUint8A *buffer, 
+    _Out_ MI_Uint32 *bufferIndex);
+
+void LCM_WriteMessageInfo(
+_In_ LCMProviderContext *lcmContext,  
+_In_opt_z_ const MI_Char *computerName, 
+_In_ MI_Uint32 channel,
+_In_z_ const MI_Char *userSid);
+
+void LCM_WriteMessage_Internal_Tokenized(
     _In_ LCMProviderContext *lcmContext,  
+    _In_z_ const MI_Char *resourceId, 
+    _In_ MI_Uint32 channel, 
+    _In_z_ const MI_Char *message,
+    _In_ MI_Boolean bRunWhatIf);
+
+void LCM_WriteMessage_EngineInternal( _In_ LCMProviderContext *lcmContext,  
+    _In_z_ const MI_Char *resourceId, 
+    _In_ MI_Uint32 channel, 
+    _In_z_ const MI_Char *message
+    );    
+
+void LCM_WriteMessage_ProviderInternal( _In_ LCMProviderContext *lcmContext,  
+    _In_z_ const MI_Char *resourceId, 
+    _In_ MI_Uint32 channel, 
+    _In_z_ const MI_Char *message
+    );     
+
+void LCM_WriteMessageInfo_Internal( _In_ LCMProviderContext *lcmContext,  
     _In_opt_z_ const MI_Char *computerName, 
-    _In_ MI_Uint32 channel,
-    _In_z_ const MI_Char *userSid);
-   
-    void LCM_WriteMessage_Internal_Tokenized(
-        _In_ LCMProviderContext *lcmContext,  
-        _In_z_ const MI_Char *resourceId, 
-        _In_ MI_Uint32 channel, 
-        _In_z_ const MI_Char *message,
-        _In_ MI_Boolean bRunWhatIf);
+    _In_ MI_Uint32 channel, 
+    _In_z_ const MI_Char *userSid
+    );
 
-    void LCM_WriteMessage_EngineInternal( _In_ LCMProviderContext *lcmContext,  
-        _In_z_ const MI_Char *resourceId, 
-        _In_ MI_Uint32 channel, 
-        _In_z_ const MI_Char *message
-        );    
+void LCM_BuildMessage(_In_ LCMProviderContext *lcmContext,  
+    _In_ MI_Uint32 errorStringId,
+    _In_z_ const MI_Char *resourceId, 
+    _In_ MI_Uint32 channel); 
 
-    void LCM_WriteMessage_ProviderInternal( _In_ LCMProviderContext *lcmContext,  
-        _In_z_ const MI_Char *resourceId, 
-        _In_ MI_Uint32 channel, 
-        _In_z_ const MI_Char *message
-        );     
+
+MI_Uint32 GetCallSetConfigurationFlags(_In_opt_ MI_Context* context);
+
+MI_Result UpdateCurrentStatus(
+    _In_opt_ MI_Boolean *complianceStatus,
+    _In_opt_ MI_Uint32 *getActionStatusCode,
+    _In_opt_ MI_Uint32 *lcmStatusCode,
+    _In_opt_ MI_Char *registeredServerURLs,
+    _Outptr_result_maybenull_ MI_Instance **extendedError);
+
+void GetLatestStatus(
+    _Out_ MI_Boolean *complianceStatus,
+    _Out_ MI_Uint32 *getActionStatusCode,
+            _Out_ MI_Uint32 *lcmStatusCode);
+
+MI_Result InitCacheAndMetaConfig(_Outptr_result_maybenull_ MSFT_DSCMetaConfiguration **metaConfig,
+                        _Outptr_result_maybenull_ MI_Instance **DSCInternalCache,
+                        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
+
+MI_Result InitMetaConfig(_In_ ModuleManager *moduleManager,
+    _Outptr_result_maybenull_ MSFT_DSCMetaConfiguration **metaConfig,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result UpdateDefaultValueForMetaConfig(
+    _Inout_ MI_Instance* self);
+
+MI_Result InitDSCInternalCache(_In_ ModuleManager *moduleManager,
+    _Outptr_result_maybenull_ MI_Instance **DSCInternalCache,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
+
+MI_Result UpdateDSCCacheInstance(
+    _In_ MI_Application *miApp,
+    _Inout_ MI_Instance **dscCacheInstance, 
+    _In_opt_ MI_Boolean* complianceStatus,
+    _In_opt_ MI_Uint32* getActionStatusCode,
+            _In_opt_ MI_Uint32* lcmStatusCode,
+    _In_opt_ MI_Char* registeredServerURLs,
+    _Outptr_result_maybenull_ MI_Instance **extendedError);
+
+MI_Result UpdateLCMStatusCodeHistory(
+        _In_ MI_Instance **dscInternalCache,
+        _Outptr_result_maybenull_z_ MI_Char **lcmStatusCodeHistory);
+
+MI_Result GetLCMStatusCodeHistory(
+        _Outptr_result_maybenull_z_ MI_Char **lcmStatusCodeHistory,
+        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result SerializeMetaConfig(_In_ const MSFT_DSCMetaConfiguration *metaConfig,
+    _In_ ModuleManager *moduleManager,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result DeseralizeMetaConfig(_Outptr_result_maybenull_ MSFT_DSCMetaConfiguration **metaConfig,
+    _In_ ModuleManager *moduleManager,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result TaskHelper(_In_z_ MI_Char* taskPath,
+    _In_z_ MI_Char* taskName,
+    _In_z_ const MI_Char* methodName,
+    _In_ ModuleManager *moduleManager,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+
+MI_Result InitPath(_Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+const MI_Char *GetPendingConfigFileName();
+
+const MI_Char * GetPendingConfigTmpFileName();
+
+const MI_Char * GetGetConfigFileName();
+
+const MI_Char * GetInventoryFileName();
+
+const MI_Char * GetInventoryReportFileName();
+
+const MI_Char * GetConfigChecksumFileName();
+
+const MI_Char *GetCurrentConfigFileName();
+
+const MI_Char *GetPreviousConfigFileName();
+
+const MI_Char *GetMetaConfigTmpFileName();
+
+const MI_Char *GetPullRunLogFileName();
+
+const MI_Char *GetConfigPath();
+
+    const MI_Char *GetCurrentLCMStatusCodeHistory();
+
+
+/*This will return the extension for partial Configuration files*/
+const MI_Char*GetMofExtension();
+
+/*This will return the checksum extension for partial Configuration files*/
+
+const MI_Char * GetMofChecksumExtension()    ;
+
+/*This will point to the unique partial configuration name*/
+const MI_Char*GetPartialConfigDataStore();
+
+/*This will point to the unique partial configuration name*/
+const MI_Char*GetPartialConfigSuffix();
+
+const MI_Char * GetPartialConfigBaseDocumentInstanceFileName();
+
+const MI_Char * GetPartialConfigBaseDocumentInstanceTmpFileName();
+
+/*Function to obtain the partial configuration file name*/
+MI_Result GetPartialConfigStoreLocation(_In_ ModuleManager * moduleManager,
+    _In_count_(documentSize) const MI_Uint8* configData,
+    _In_ MI_Uint32 documentSize,
+    _Outptr_result_maybenull_ MI_Instance** cimErrorDetails,
+    _Outptr_result_maybenull_z_  MI_Char** configFileName);
+/*Function to add instances into the destination file.*/
+MI_Result SerializeInstanceArrayToFile(_In_ MI_InstanceA *miInstanceArray,
+    _In_z_ const MI_Char* filePath,
+    _Outptr_result_maybenull_ MI_Instance** cimErrorDetails,
+    _In_z_ const MI_Char* fileOpenMode,
+    _In_ MI_Boolean isLockSensitive,
+    _Inout_ MI_Serializer *pSerializer);
+
+/*method to get partial configuration name*/
+MI_Result GetPartialConfigurationName(_In_ MI_Instance *partialConfiguration, 
+                                    _Outptr_result_maybenull_z_ const MI_Char** name,
+                                    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
+
+/*Returns constant memory for partialconfigurations held by meta config instance*/
+MI_Result GetPartialConfigurations(_In_ MI_Instance *metaInstance, _Inout_ MI_InstanceA *partialConfigurations,
+                                        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result ValidateConfigurationDirectory(
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+/*Function to add a single instance to a destination file*/
+MI_Result SerializeSingleInstanceToFile(_In_ MI_Instance *miInstance,
+    _In_z_ const MI_Char* filePath,
+    _Outptr_result_maybenull_ MI_Instance** cimErrorDetails,
+    _In_z_ const MI_Char* fileOpenMode,
+    _In_ MI_Boolean isLockSensitive,
+    _Inout_ MI_Serializer *pSerializer);
+
+
+MI_Result SetLCMStatusBusy(LCMProviderContext *lcmContext);
+
+MI_Result SetLCMStatusReady(LCMProviderContext *lcmContext);
+
+MI_Result SetLCMStatusReboot();
+
+
+MI_Result DeleteRegistrationKeyFromManagerInstance(
+    _In_ LCMProviderContext *lcmContext,
+    _Inout_ MI_Instance **managerInstance,
+    MI_Uint32 typeOfDownloadManagerInstance,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result RegisterWithServers(_In_ LCMProviderContext *lcmContext,
+    _In_ MI_Instance *metaConfigInstance,
+    _In_ MI_Uint32 isPull,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result RegisterWithPullServers(_In_ LCMProviderContext *lcmContext,
+    _In_ MI_Instance *metaConfigInstance,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result RegisterWithReportingServers(_In_ LCMProviderContext *lcmContext,
+    _In_ MI_Instance *metaConfigInstance,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result DoRegistration(
+    _In_ LCMProviderContext* lcmContext,
+    _Inout_ MI_InstanceA *managerInstances,        
+    _In_ MI_Uint32 typeOfDownloadManagerInstance,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+
+MI_Result SetDownloadManagerInstancesInMetaConfig(
+    _In_ LCMProviderContext* lcmContext,
+    _In_ MI_InstanceA downloadManagerInstances,
+    _In_ MI_Uint32 typeOfDownloadManagerInstance,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
     
-    void LCM_WriteMessageInfo_Internal( _In_ LCMProviderContext *lcmContext,  
-        _In_opt_z_ const MI_Char *computerName, 
-        _In_ MI_Uint32 channel, 
-        _In_z_ const MI_Char *userSid
-        );
 
-    void LCM_BuildMessage(_In_ LCMProviderContext *lcmContext,  
-        _In_ MI_Uint32 errorStringId,
-        _In_z_ const MI_Char *resourceId, 
-        _In_ MI_Uint32 channel); 
-    
+MI_Result LCM_Pull_GetConfiguration(
+    _In_ LCMProviderContext *lcmContext,
+    _In_ ModuleManager *moduleManager,
+    _In_ MI_Instance *metaConfigInstance,
+    _In_opt_z_ MI_Char *partialConfigName,
+    _Out_ MI_Uint32 * numModulesInstalled,
+    _In_opt_z_ MI_Char *assignedConfiguration,
+    _Inout_ MI_Uint32 *resultExecutionStatus,
+    _Out_ MI_Uint32 *getActionStatusCode,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Uint32 GetCallSetConfigurationFlags(_In_opt_ MI_Context* context);
+MI_Result LCM_Pull_GetAction(_In_ LCMProviderContext *lcmContext,
+                                _In_ MI_Instance *metaConfigInstance,
+                                _In_opt_z_ MI_Char *partialConfigName,
+                                _In_z_ MI_Char *checkSum,
+                                _In_ MI_Boolean bIsCompliant,
+                                _In_ MI_Uint32 lastGetActionStatusCode,
+                                _Outptr_result_maybenull_z_  MI_Char** resultStatus,
+                                _Out_  MI_Uint32* getActionStatusCode,
+                                _Outptr_result_maybenull_ OverAllGetActionResponse** serverAssignedConfigurations,
+                                _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result UpdateCurrentStatus(
-        _In_opt_ MI_Boolean *complianceStatus,
-        _In_opt_ MI_Uint32 *getActionStatusCode,
-        _In_opt_ MI_Uint32 *lcmStatusCode,
-        _In_opt_ MI_Char *registeredServerURLs,
-        _Outptr_result_maybenull_ MI_Instance **extendedError);
+MI_Result LCM_Do_Register(
+    _In_ MI_Instance *metaConfigInstance,
+    _In_ MI_Instance *managerInstance,
+    _In_z_ MI_Char *agentId,
+    _In_z_ MI_Char *thumbprint,
+    _In_ MI_Instance *registrationPayload,
+    _In_ MI_StringA *configurationNames,
+    _In_ MI_Uint32 typeOfManagerInstance,
+    _Outptr_result_maybenull_z_  MI_Char** result,
+    _Out_ MI_Uint32* getActionStatusCode,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    void GetLatestStatus(
-        _Out_ MI_Boolean *complianceStatus,
-        _Out_ MI_Uint32 *getActionStatusCode,
-                _Out_ MI_Uint32 *lcmStatusCode);
+MI_Result MI_CALL LCM_Pull_Execute(
+    _In_ LCMProviderContext *lcmContext,
+    _In_ MI_Instance *metaConfigInstance,
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result InitCacheAndMetaConfig(_Outptr_result_maybenull_ MSFT_DSCMetaConfiguration **metaConfig,
-                         _Outptr_result_maybenull_ MI_Instance **DSCInternalCache,
-                         _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
+    void ConcatStrings(_Outptr_result_z_ MI_Char** target,_In_ MI_Uint32 padding,_In_z_ MI_Char* source1, _In_z_ MI_Char* source2);
+MI_Result TimeToRunConsistencyCheck(_Out_ MI_Boolean *bRunConsistencyCheck, 
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result InitMetaConfig(_In_ ModuleManager *moduleManager,
-        _Outptr_result_maybenull_ MSFT_DSCMetaConfiguration **metaConfig,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Result TimeToRunConsistencyCheck(_Out_ MI_Boolean *bRunConsistencyCheck, 
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result UpdateDefaultValueForMetaConfig(
-        _Inout_ MI_Instance* self);
+MI_Result RegisterConsistencyTask( _In_ MI_Instance *currentMetaConfigInstance, 
+    _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result InitDSCInternalCache(_In_ ModuleManager *moduleManager,
-        _Outptr_result_maybenull_ MI_Instance **DSCInternalCache,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
+MI_Result RegisterStartAtBootTask(_In_ MI_Boolean bregisterTask, 
+                                        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result UpdateDSCCacheInstance(
-        _In_ MI_Application *miApp,
-        _Inout_ MI_Instance **dscCacheInstance, 
-        _In_opt_ MI_Boolean* complianceStatus,
-        _In_opt_ MI_Uint32* getActionStatusCode,
-                _In_opt_ MI_Uint32* lcmStatusCode,
-        _In_opt_ MI_Char* registeredServerURLs,
-        _Outptr_result_maybenull_ MI_Instance **extendedError);
+MI_Boolean ShouldAutoCorrect(_In_z_ MI_Char* configurationMode);
 
-        MI_Result UpdateLCMStatusCodeHistory(
-                _In_ MI_Instance **dscInternalCache,
-                _Outptr_result_maybenull_z_ MI_Char **lcmStatusCodeHistory);
+MI_Boolean ShouldMonitor(_In_z_ MI_Char* configurationMode);
 
-        MI_Result GetLCMStatusCodeHistory(
-                _Outptr_result_maybenull_z_ MI_Char **lcmStatusCodeHistory,
-                _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
+MI_Boolean ShouldMonitorOnly(_In_z_ MI_Char* configurationMode);
 
-    MI_Result SerializeMetaConfig(_In_ const MSFT_DSCMetaConfiguration *metaConfig,
-        _In_ ModuleManager *moduleManager,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result DeseralizeMetaConfig(_Outptr_result_maybenull_ MSFT_DSCMetaConfiguration **metaConfig,
-        _In_ ModuleManager *moduleManager,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result TaskHelper(_In_z_ MI_Char* taskPath,
-        _In_z_ MI_Char* taskName,
-        _In_z_ const MI_Char* methodName,
-        _In_ ModuleManager *moduleManager,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-
-    MI_Result InitPath(_Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    const MI_Char *GetPendingConfigFileName();
-
-    const MI_Char * GetPendingConfigTmpFileName();
-
-    const MI_Char * GetGetConfigFileName();
-
-    const MI_Char * GetInventoryFileName();
-
-    const MI_Char * GetInventoryReportFileName();
-
-    const MI_Char * GetConfigChecksumFileName();
-
-    const MI_Char *GetCurrentConfigFileName();
-
-    const MI_Char *GetPreviousConfigFileName();
-
-    const MI_Char *GetMetaConfigTmpFileName();
-
-    const MI_Char *GetPullRunLogFileName();
-
-    const MI_Char *GetConfigPath();
-
-        const MI_Char *GetCurrentLCMStatusCodeHistory();
-
-
-    /*This will return the extension for partial Configuration files*/
-    const MI_Char*GetMofExtension();
-
-    /*This will return the checksum extension for partial Configuration files*/
-
-    const MI_Char * GetMofChecksumExtension()    ;
-
-    /*This will point to the unique partial configuration name*/
-    const MI_Char*GetPartialConfigDataStore();
-
-    /*This will point to the unique partial configuration name*/
-    const MI_Char*GetPartialConfigSuffix();
-
-    const MI_Char * GetPartialConfigBaseDocumentInstanceFileName();
-
-    const MI_Char * GetPartialConfigBaseDocumentInstanceTmpFileName();
-
-    /*Function to obtain the partial configuration file name*/
-    MI_Result GetPartialConfigStoreLocation(_In_ ModuleManager * moduleManager,
-        _In_count_(documentSize) const MI_Uint8* configData,
-        _In_ MI_Uint32 documentSize,
-        _Outptr_result_maybenull_ MI_Instance** cimErrorDetails,
-        _Outptr_result_maybenull_z_  MI_Char** configFileName);
-    /*Function to add instances into the destination file.*/
-    MI_Result SerializeInstanceArrayToFile(_In_ MI_InstanceA *miInstanceArray,
-        _In_z_ const MI_Char* filePath,
-        _Outptr_result_maybenull_ MI_Instance** cimErrorDetails,
-        _In_z_ const MI_Char* fileOpenMode,
-        _In_ MI_Boolean isLockSensitive,
-        _Inout_ MI_Serializer *pSerializer);
-
-    /*method to get partial configuration name*/
-    MI_Result GetPartialConfigurationName(_In_ MI_Instance *partialConfiguration, 
-                                      _Outptr_result_maybenull_z_ const MI_Char** name,
-                                      _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);    
-
-    /*Returns constant memory for partialconfigurations held by meta config instance*/
-    MI_Result GetPartialConfigurations(_In_ MI_Instance *metaInstance, _Inout_ MI_InstanceA *partialConfigurations,
-                                            _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result ValidateConfigurationDirectory(
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    /*Function to add a single instance to a destination file*/
-    MI_Result SerializeSingleInstanceToFile(_In_ MI_Instance *miInstance,
-        _In_z_ const MI_Char* filePath,
-        _Outptr_result_maybenull_ MI_Instance** cimErrorDetails,
-        _In_z_ const MI_Char* fileOpenMode,
-        _In_ MI_Boolean isLockSensitive,
-        _Inout_ MI_Serializer *pSerializer);
-
-
-    MI_Result SetLCMStatusBusy(LCMProviderContext *lcmContext);
-    
-    MI_Result SetLCMStatusReady(LCMProviderContext *lcmContext);
-    
-    MI_Result SetLCMStatusReboot();
-
-
-    MI_Result DeleteRegistrationKeyFromManagerInstance(
-        _In_ LCMProviderContext *lcmContext,
-        _Inout_ MI_Instance **managerInstance,
-        MI_Uint32 typeOfDownloadManagerInstance,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result RegisterWithServers(_In_ LCMProviderContext *lcmContext,
-        _In_ MI_Instance *metaConfigInstance,
-        _In_ MI_Uint32 isPull,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result RegisterWithPullServers(_In_ LCMProviderContext *lcmContext,
-        _In_ MI_Instance *metaConfigInstance,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result RegisterWithReportingServers(_In_ LCMProviderContext *lcmContext,
-        _In_ MI_Instance *metaConfigInstance,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result DoRegistration(
-        _In_ LCMProviderContext* lcmContext,
-        _Inout_ MI_InstanceA *managerInstances,        
-        _In_ MI_Uint32 typeOfDownloadManagerInstance,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result SetDownloadManagerInstancesInMetaConfig(
-        _In_ LCMProviderContext* lcmContext,
-        _In_ MI_InstanceA downloadManagerInstances,
-        _In_ MI_Uint32 typeOfDownloadManagerInstance,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-        
-    
-    MI_Result LCM_Pull_GetConfiguration(
-        _In_ LCMProviderContext *lcmContext,
-        _In_ ModuleManager *moduleManager,
-        _In_ MI_Instance *metaConfigInstance,
-        _In_opt_z_ MI_Char *partialConfigName,
-        _Out_ MI_Uint32 * numModulesInstalled,
-        _In_opt_z_ MI_Char *assignedConfiguration,
-        _Inout_ MI_Uint32 *resultExecutionStatus,
-        _Out_ MI_Uint32 *getActionStatusCode,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result LCM_Pull_GetAction(_In_ LCMProviderContext *lcmContext,
-                                 _In_ MI_Instance *metaConfigInstance,
-                                 _In_opt_z_ MI_Char *partialConfigName,
-                                 _In_z_ MI_Char *checkSum,
-                                 _In_ MI_Boolean bIsCompliant,
-                                 _In_ MI_Uint32 lastGetActionStatusCode,
-                                 _Outptr_result_maybenull_z_  MI_Char** resultStatus,
-                                 _Out_  MI_Uint32* getActionStatusCode,
-                                 _Outptr_result_maybenull_ OverAllGetActionResponse** serverAssignedConfigurations,
-                                 _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-     MI_Result LCM_Do_Register(
-         _In_ MI_Instance *metaConfigInstance,
-         _In_ MI_Instance *managerInstance,
-         _In_z_ MI_Char *agentId,
-         _In_z_ MI_Char *thumbprint,
-         _In_ MI_Instance *registrationPayload,
-         _In_ MI_StringA *configurationNames,
-         _In_ MI_Uint32 typeOfManagerInstance,
-         _Outptr_result_maybenull_z_  MI_Char** result,
-         _Out_ MI_Uint32* getActionStatusCode,
-         _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-    
-    MI_Result MI_CALL LCM_Pull_Execute(
-        _In_ LCMProviderContext *lcmContext,
-        _In_ MI_Instance *metaConfigInstance,
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-    
-     void ConcatStrings(_Outptr_result_z_ MI_Char** target,_In_ MI_Uint32 padding,_In_z_ MI_Char* source1, _In_z_ MI_Char* source2);
-    MI_Result TimeToRunConsistencyCheck(_Out_ MI_Boolean *bRunConsistencyCheck, 
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result TimeToRunConsistencyCheck(_Out_ MI_Boolean *bRunConsistencyCheck, 
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result RegisterConsistencyTask( _In_ MI_Instance *currentMetaConfigInstance, 
-        _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Result RegisterStartAtBootTask(_In_ MI_Boolean bregisterTask, 
-                                           _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
-
-    MI_Boolean ShouldAutoCorrect(_In_z_ MI_Char* configurationMode);
-
-    MI_Boolean ShouldMonitor(_In_z_ MI_Char* configurationMode);
-
-    MI_Boolean ShouldMonitorOnly(_In_z_ MI_Char* configurationMode);
-
-    void GetFullMessageWithTokens(_In_z_ const MI_Char * deviceName, _In_z_ const MI_Char * resourceId,
-                     _In_z_ const MI_Char * message, _In_ LCMProviderContext *lcmContext, Intlstr *intlstr);
+void GetFullMessageWithTokens(_In_z_ const MI_Char * deviceName, _In_z_ const MI_Char * resourceId,
+                    _In_z_ const MI_Char * message, _In_ LCMProviderContext *lcmContext, Intlstr *intlstr);
 
 #ifdef __cplusplus
 

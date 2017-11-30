@@ -81,18 +81,16 @@ MI_Result LCMTest_CallSetConfiguration(LCMProviderContext *lcmContext,
     MI_Uint32 dataSize,
     MI_Uint32 dwFlags,
     MI_Boolean force,
-    _In_ MI_Context* context,
     _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
 {
-    return CallSetConfiguration(lcmContext, ConfigData, dataSize, dwFlags, force, context, cimErrorDetails);
+    return CallSetConfiguration(lcmContext, ConfigData, dataSize, dwFlags, force, cimErrorDetails);
 }
 
 MI_Result LCMTest_CallConsistencyEngine(LCMProviderContext *lcmContext,
-    _In_ MI_Context* context,
     _In_ MI_Uint32 invokeMode,
     _Outptr_result_maybenull_ MI_Instance **cimErrorDetails)
 {
-    return CallConsistencyEngine(lcmContext, context, invokeMode, cimErrorDetails);
+    return CallConsistencyEngine(lcmContext, invokeMode, cimErrorDetails);
 }
 
 MI_Result LCMTest_TaskHelper(_In_z_ MI_Char* taskPath,

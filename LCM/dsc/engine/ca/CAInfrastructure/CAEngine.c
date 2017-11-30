@@ -1039,9 +1039,9 @@ MI_Result MI_CALL SendConfigurationApply( _In_ LCMProviderContext *lcmContext,
     ResourceErrorList resourceErrorList;
     char * resourceErrorString;
     DSC_EventWriteMessageParsingConfiguration();
-    DSC_EventWriteEngineMethodParameters(__WFUNCTION__,documentIns->classDecl->name,_STRINGEMPTY_,flags,lcmContext->executionMode,documentIns->nameSpace);
+    DSC_EventWriteEngineMethodParameters(__WFUNCTION__, documentIns->classDecl->name, _STRINGEMPTY_, flags, lcmContext->executionMode, documentIns->nameSpace);
     
-    if( instanceA == 0 || moduleManager == 0 || instanceA->size == 0 || NitsShouldFault(NitsHere(), NitsAutomatic) )
+    if (instanceA == 0 || moduleManager == 0 || instanceA->size == 0 || NitsShouldFault(NitsHere(), NitsAutomatic))
     {
         return GetCimMIError(MI_RESULT_INVALID_PARAMETER, extendedError,ID_CAINFRA_DEPENDCY_NULLPARAM);
     }
@@ -1055,7 +1055,7 @@ MI_Result MI_CALL SendConfigurationApply( _In_ LCMProviderContext *lcmContext,
     moduleLoader = (ModuleLoaderObject*) moduleManager->reserved2;
 
     r = ValidateIfDuplicatedInstances(instanceA, extendedError);
-    if( r != MI_RESULT_OK)
+    if (r != MI_RESULT_OK)
     {
         FreeExecutionOrderContainer(&executionContainer);
         return r;
@@ -1063,7 +1063,7 @@ MI_Result MI_CALL SendConfigurationApply( _In_ LCMProviderContext *lcmContext,
 
     /*Resolving dependencies*/
     r = ResolveDependency(instanceA, &executionContainer, extendedError);
-    if( r != MI_RESULT_OK)
+    if (r != MI_RESULT_OK)
     {
         FreeExecutionOrderContainer(&executionContainer);
         return r;
@@ -1071,7 +1071,7 @@ MI_Result MI_CALL SendConfigurationApply( _In_ LCMProviderContext *lcmContext,
 
     /*Create MI session*/
     r = DSC_MI_Application_NewSession(moduleLoader->application, NULL, NULL, NULL, NULL, NULL, &miSession);
-    if( r != MI_RESULT_OK)
+    if (r != MI_RESULT_OK)
     {
         FreeExecutionOrderContainer(&executionContainer);      
         return GetCimMIError(r, extendedError,ID_CAINFRA_NEWSESSION_FAILED);
@@ -1097,7 +1097,7 @@ MI_Result MI_CALL SendConfigurationApply( _In_ LCMProviderContext *lcmContext,
     }
 
     CleanupResourceErrorList(&resourceErrorList);
-    if( r != MI_RESULT_OK )
+    if (r != MI_RESULT_OK )
     {
         FreeExecutionOrderContainer(&executionContainer);            
         MI_Session_Close(&miSession, NULL, NULL);            

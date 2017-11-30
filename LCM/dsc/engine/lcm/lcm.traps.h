@@ -36,11 +36,9 @@ NitsTrapTable(LCMTraps, 0)
                                MI_Uint32 dataSize,
                                MI_Uint32 dwFlags,
 							   MI_Boolean force,
-                               _In_ MI_Context* context,
                                _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
-    MI_Result ( NITS_CALL * _LCMTest_CallConsistencyEngine)(_In_ MI_Context* context,
-                                _In_ MI_Uint32 invokeMode,
+    MI_Result ( NITS_CALL * _LCMTest_CallConsistencyEngine)(_In_ MI_Uint32 invokeMode,
                                 _Outptr_result_maybenull_ MI_Instance **cimErrorDetails);
 
     MI_Result ( NITS_CALL * _LCMTest_TaskHelper)(_In_z_ MI_Char* taskPath,

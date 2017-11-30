@@ -221,6 +221,8 @@ MI_Result ModuleManager_LoadInstanceDocumentFromLocation (
     ModuleLoaderObject *moduleLoader = NULL;
     DSC_EventWriteMessageLoadingInstance(documentLocation);
 
+    LCM_WriteMessage(NULL, NULL, 1, "---Starting ModuleManager_LoadInstanceDocumentFromLocation---");
+
     if( moduleManager == NULL || documentLocation == NULL || documentInstance == NULL || resources == NULL || NitsShouldFault(NitsHere(), NitsAutomatic))
     {
         return GetCimMIError(MI_RESULT_INVALID_PARAMETER, extendedError,ID_MODMAN_LOADDOC_NULLPARAM);
@@ -233,7 +235,6 @@ MI_Result ModuleManager_LoadInstanceDocumentFromLocation (
     {
         return r;
     }
-
 
     moduleLoader = (ModuleLoaderObject*) moduleManager->reserved2;
     miClassArray.size = moduleLoader->schemaCount;
@@ -249,6 +250,8 @@ MI_Result ModuleManager_LoadInstanceDocumentFromLocation (
         return r;
     }
     r = FilterForConfigurationResource(&miInstanceArray, resources, documentInstance,extendedError);
+
+    LCM_WriteMessage(NULL, NULL, 1, "---Finishing ModuleManager_LoadInstanceDocumentFromLocation---");
 
     return r;
 }

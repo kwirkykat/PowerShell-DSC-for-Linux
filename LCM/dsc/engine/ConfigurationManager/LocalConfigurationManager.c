@@ -172,13 +172,14 @@ void UnloadFromProvider(
 
 MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_SendConfigurationApply_Internal(void *param)
 {
-    MI_Result miResult;
+    MI_Result miResult = MI_RESULT_OK;
     MI_Instance *cimErrorDetails = NULL;
     MI_Uint32 bufferIndex = 0;
 
     // Declarations for measuring time
     MI_Real64 duration;
-    ptrdiff_t start, finish; 
+    ptrdiff_t start;
+    ptrdiff_t finish; 
 
     MSFT_DSCLocalConfigurationManager_SendConfigurationApply outputObject;
     Context_Invoke_Basic *args = (Context_Invoke_Basic*)param;
@@ -218,25 +219,24 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_SendConfigurationApply_Internal(void *p
         return 0;
     }
 
-    GetRealBufferIndex(&args->data, &bufferIndex);
-
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, args->context);
     if (miResult != MI_RESULT_OK)
     {
-        GetCimMIError(miResult, &cimErrorDetails, ID_LCMHELPER_CONSTRUCTGET_FAILED);
+        goto ExitWithError;
+    }
+
+    LCM_WriteMessage(lcmContext, NULL, 1, "---Initialized LCM context---");
+
+    GetRealBufferIndex(&args->data, &bufferIndex);
+    miResult = SetLCMStatusBusy(lcmContext);
+    if (miResult != MI_RESULT_OK)
+    {
         goto ExitWithError;
     }
 
     start = CPU_GetTimeStamp();
 
-    miResult = SetLCMStatusBusy(lcmContext);
-    if (miResult != MI_RESULT_OK)
-    {
-        GetCimMIError(miResult, &cimErrorDetails, ID_LCMHELPER_CONSTRUCTGET_FAILED);
-        goto ExitWithError;
-    }
-
-    miResult = CallSetConfiguration(lcmContext, args->data.data + bufferIndex, args->data.size - bufferIndex, args->flag, args->force, args->context, &cimErrorDetails); 
+    miResult = CallSetConfiguration(lcmContext, args->data.data + bufferIndex, args->data.size - bufferIndex, args->flag, args->force, &cimErrorDetails); 
     if (miResult != MI_RESULT_OK)
     {
         goto ExitWithError;
@@ -263,7 +263,7 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_SendConfigurationApply_Internal(void *p
     // Stop the clock and measure time taken for this operation
     finish = CPU_GetTimeStamp();
     duration = (MI_Real64)(finish - start) / TIME_PER_SECONND;
-    LCM_WriteMessage_Internal_TimeTaken(args->context,EMPTY_STRING, ID_LCM_TIMEMESSAGE, ID_OUTPUT_ITEM_SET, (const MI_Real64)duration, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
+    LCM_WriteMessage_Internal_TimeTaken(args->context, EMPTY_STRING, ID_LCM_TIMEMESSAGE, ID_OUTPUT_ITEM_SET, (const MI_Real64)duration, MI_WRITEMESSAGE_CHANNEL_VERBOSE);
 
     EndLcmOperation();
     SetLCMStatusReady(lcmContext);
@@ -389,14 +389,11 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_GetConfiguration_Internal(void *param)
         goto ExitWithError;
     }   
 
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, args->context);
 
     start = CPU_GetTimeStamp();
     SetLCMStatusBusy(lcmContext);
-    miResult = CallGetConfiguration(lcmContext,
-        dataValue.data, 
-        dataValue.size, &outInstances, 
-        args->context, &cimErrorDetails);
+    miResult = CallGetConfiguration(lcmContext, dataValue.data, dataValue.size, &outInstances, &cimErrorDetails);
     if (miResult != MI_RESULT_OK)
     {
         MSFT_DSCLocalConfigurationManager_GetConfiguration_Destruct(&outputObject);
@@ -513,7 +510,7 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_ApplyConfiguration_Internal(void *param
         return 0;
     }
 
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, args->context);
 
     miResult = MSFT_DSCLocalConfigurationManager_ApplyConfiguration_Construct(&outputObject, args->context);
     if (miResult != MI_RESULT_OK)
@@ -523,7 +520,7 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_ApplyConfiguration_Internal(void *param
     }       
 
     SetLCMStatusBusy(lcmContext);
-    miResult = CallConsistencyEngine(lcmContext, args->context, TASK_REGULAR, &cimErrorDetails); 
+    miResult = CallConsistencyEngine(lcmContext, TASK_REGULAR, &cimErrorDetails); 
     if (miResult != MI_RESULT_OK)
     {
         goto ExitWithError;
@@ -606,7 +603,7 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_GetMetaConfiguration_Internal(void *par
         return 0;
     }
 
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, args->context);
 
     SetLCMStatusBusy(lcmContext);
     miResult = GetMetaConfig(&metaConfigInstance);
@@ -719,12 +716,12 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_RollBack_Internal(void *param)
         return 0;
     }
 
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, args->context);
 
     //Log operational event for restoring configuration
     DSC_EventWriteRestoringConfiguration();
     SetLCMStatusBusy(lcmContext);
-    miResult = CallRestoreConfiguration(lcmContext, args->flag, args->context, &cimErrorDetails); 
+    miResult = CallRestoreConfiguration(lcmContext, args->flag, &cimErrorDetails); 
     if (miResult != MI_RESULT_OK)
     {
         goto ExitWithError;
@@ -805,7 +802,7 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_TestConfiguration_Internal(void *param)
         return 0;
     }
 
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, args->context);
     if (miResult != MI_RESULT_OK)
     {
         GetCimMIError(miResult, &cimErrorDetails, ID_LCMHELPER_CONSTRUCTTEST_FAILED);
@@ -820,7 +817,7 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_TestConfiguration_Internal(void *param)
     }   
 
     SetLCMStatusBusy(lcmContext);
-    miResult = CallTestConfiguration(lcmContext, &testStatus, &resourceId, args->context, &cimErrorDetails);
+    miResult = CallTestConfiguration(lcmContext, &testStatus, &resourceId, &cimErrorDetails);
     if (miResult != MI_RESULT_OK)
     {
         MSFT_DSCLocalConfigurationManager_TestConfiguration_Destruct(&outputObject);
@@ -934,7 +931,7 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_PerformRequiredConfigurationChecks_Inte
         return 0;
     }
 
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, args->context);
 
     SetLCMStatusBusy(lcmContext);
     miResult = GetMetaConfig((MSFT_DSCMetaConfiguration **)&metaConfigInstance);
@@ -981,7 +978,7 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_PerformRequiredConfigurationChecks_Inte
         }
     }    
 
-    miResult = RunConsistencyEngine(lcmContext, args->context, args->flag, &cimErrorDetails);
+    miResult = RunConsistencyEngine(lcmContext, args->flag, &cimErrorDetails);
     if (miResult != MI_RESULT_OK)
     {
         MI_Instance_Delete((MI_Instance *)metaConfigInstance);
@@ -1089,7 +1086,7 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_StopConfiguration_Internal(void *param)
         return 0;
     }
 
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, args->context);
 
     SetLCMStatusBusy(lcmContext);
     miResult = MSFT_DSCLocalConfigurationManager_StopConfiguration_Post(&outputObject, args->context);
@@ -1467,7 +1464,7 @@ void Invoke_SendMetaConfigurationApply(
     args->data.size = in->ConfigurationData.value.size;
     args->flag = GetCallSetConfigurationFlags(context) | LCM_SET_METACONFIG;  
 
-	LCMTaskNode * newNode = (LCMTaskNode*)DSC_malloc(sizeof(LCMTaskNode), NitsHere());
+	LCMTaskNode *newNode = (LCMTaskNode*)DSC_malloc(sizeof(LCMTaskNode), NitsHere());
 	newNode->task = Invoke_SendConfigurationApply_Internal;
 	newNode->params = args;
 	newNode->next = NULL;
@@ -1841,15 +1838,14 @@ MI_EXTERN_C PAL_Uint32 THREAD_API Invoke_PerformInventory_Internal(void *param)
         goto ExitWithError;
     }
 
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, args->context);
 
     start = CPU_GetTimeStamp();
     SetLCMStatusBusy(lcmContext);
 
     InMOF = (MI_Char*) args->stringdata;
 
-    miResult = CallPerformInventory (lcmContext, InMOF, &outInstances, 
-        args->context, &cimErrorDetails);
+    miResult = CallPerformInventory (lcmContext, InMOF, &outInstances, &cimErrorDetails);
     if (miResult != MI_RESULT_OK)
     {
         MSFT_DSCLocalConfigurationManager_PerformInventory_Destruct(&outputObject);

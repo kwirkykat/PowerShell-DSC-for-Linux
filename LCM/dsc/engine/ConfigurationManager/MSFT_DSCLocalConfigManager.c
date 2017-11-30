@@ -138,10 +138,9 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_SendConfiguration(
 
     GetRealBufferIndex( &(in->ConfigurationData.value), &bufferIndex);
 
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, context);
 
-    miResult = CallSetConfiguration(lcmContext, in->ConfigurationData.value.data + bufferIndex, 
-                            in->ConfigurationData.value.size - bufferIndex, LCM_SETFLAGS_SAVETOPENDINGONLY, context, &cimErrorDetails); 
+    miResult = CallSetConfiguration(lcmContext, in->ConfigurationData.value.data + bufferIndex, in->ConfigurationData.value.size - bufferIndex, LCM_SETFLAGS_SAVETOPENDINGONLY, &cimErrorDetails); 
 
     FreeLCMContext(lcmContext);
 
@@ -212,10 +211,9 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_SendConfigurationApply(
 
     GetRealBufferIndex( &(in->ConfigurationData.value), &bufferIndex);
 
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, context);
 
-    miResult = CallSetConfiguration(lcmContext, in->ConfigurationData.value.data + bufferIndex, 
-                            in->ConfigurationData.value.size - bufferIndex, LCM_SETFLAGS_DEFAULT, context, &cimErrorDetails); 
+    miResult = CallSetConfiguration(lcmContext, in->ConfigurationData.value.data + bufferIndex, in->ConfigurationData.value.size - bufferIndex, LCM_SETFLAGS_DEFAULT, &cimErrorDetails); 
 
     FreeLCMContext(lcmContext);
 
@@ -338,14 +336,9 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_GetConfiguration(
 
     GetRealBufferIndex( &(in->configurationData.value), &bufferIndex);
 
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, context);
 
-    miResult = CallGetConfiguration(lcmContext,
-        in->configurationData.value.data + bufferIndex, 
-        in->configurationData.value.size - bufferIndex,
-        &outInstances, 
-        context,
-        &cimErrorDetails);
+    miResult = CallGetConfiguration(lcmContext, in->configurationData.value.data + bufferIndex, in->configurationData.value.size - bufferIndex, &outInstances, &cimErrorDetails);
 
     FreeLCMContext(lcmContext);
 
@@ -480,9 +473,9 @@ void MI_CALL MSFT_DSCLocalConfigManager_Invoke_ApplyConfiguration(
         return;
     }       
 
-    miResult = InitializeLCMContext(&lcmContext);
+    miResult = InitializeLCMContext(&lcmContext, context);
 
-    miResult = CallConsistencyEngine(lcmContext, context, &cimErrorDetails);
+    miResult = CallConsistencyEngine(lcmContext, &cimErrorDetails);
 
     FreeLCMContext(lcmContext);
 
