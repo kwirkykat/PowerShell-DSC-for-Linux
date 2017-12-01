@@ -4732,10 +4732,12 @@ MI_Result ReportStatusToServer(
                         return r;
                     }
                 }
+*/
                 // Set NodeName
-                if (configurationStatus->HostName.exists)
-                {
-                    value.string = (MI_Char*)configurationStatus->HostName.value;
+                //if (configurationStatus->HostName.exists)
+                //{
+                    char fakeNodeName[] = "FakeNodeName";
+                    value.string = (MI_Char*)fakeNodeName;
                     r = MI_Instance_AddElement(statusReport, REPORTING_NODENAME, &value, MI_STRING, 0);
                     if (r != MI_RESULT_OK)
                     {
@@ -4745,7 +4747,8 @@ MI_Result ReportStatusToServer(
                         MI_Instance_Delete(statusObject);
                         return r;
                     }
-                }
+                //}
+/*
                 // Set Ipadress
                 if (configurationStatus->IPV4Addresses.exists || configurationStatus->IPV6Addresses.exists)
                 {

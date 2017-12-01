@@ -567,6 +567,8 @@ typedef MI_InstancePtr* MI_InstancePtrPtr;
 #define REPORTING_JOBID MI_T("JobId")
 #define REPORTING_STARTTIME MI_T("StartTime")
 #define REPORTING_OPERATIONTYPE MI_T("OperationType")
+#define REPORTING_REBOOTREQUESTED MI_T("RebootRequested")
+#define REPORTING_MODE MI_T("RefreshMode")
 #define REPORTING_CONFIGURATIONVERSION MI_T("ConfigurationVersion")
 #define REPORTING_ENDTIME MI_T("EndTime")
 #define REPORTING_NODENAME MI_T("NodeName")
@@ -575,6 +577,7 @@ typedef MI_InstancePtr* MI_InstancePtrPtr;
 #define REPORTING_RESOURCESINDESIREDSTATE MI_T("ResourcesInDesiredState")
 #define REPORTING_RESOURCESNOTINDESIREDSTATE MI_T("ResourcesNotInDesiredState")
 #define REPORTING_REPORTFORMATVERSION MI_T("ReportFormatVersion")
+#define REPORTING_STATUS MI_T("Status")
 
 #define REPORTING_LCMVERSION MI_T("LcmVersion")
 #define REPORTING_INTERNALERRORS MI_T("Errors")
@@ -662,6 +665,7 @@ typedef struct _StatusReport_ResourceNotInDesiredState
     char * ResourceId;
     char * ConfigurationName;
     char * InDesiredState;
+    char * NodeName;
 
 } StatusReport_ResourceNotInDesiredState;
 
@@ -676,7 +680,8 @@ StatusReport_ResourceNotInDesiredState * Construct_StatusReport_RNIDS(
     char* RebootRequested,
     char* ResourceId,
     char* ConfigurationName,
-    char* InDesiredState
+    char* InDesiredState,
+    char * NodeName
     );
 
 void Destroy_StatusReport_RNIDS(StatusReport_ResourceNotInDesiredState* ptr);

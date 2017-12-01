@@ -1303,7 +1303,8 @@ StatusReport_ResourceNotInDesiredState * Construct_StatusReport_RNIDS(
     char* RebootRequested,
     char* ResourceId,
     char* ConfigurationName,
-    char* InDesiredState
+    char* InDesiredState,
+    char* NodeName
     )
 {
     StatusReport_ResourceNotInDesiredState * ptr = (StatusReport_ResourceNotInDesiredState *) DSC_malloc(sizeof(StatusReport_ResourceNotInDesiredState), NitsHere());
@@ -1318,6 +1319,7 @@ StatusReport_ResourceNotInDesiredState * Construct_StatusReport_RNIDS(
     ptr->ResourceId = DSC_strdup(ResourceId);
     ptr->ConfigurationName = DSC_strdup(ConfigurationName);
     ptr->InDesiredState = DSC_strdup(InDesiredState);
+    ptr->NodeName = DSC_strdup(NodeName);
     return ptr;
 }
 
@@ -1348,5 +1350,7 @@ void Destroy_StatusReport_RNIDS(StatusReport_ResourceNotInDesiredState* ptr)
         DSC_free(ptr->ConfigurationName);
     if (ptr->InDesiredState != NULL)
         DSC_free(ptr->InDesiredState);
+    if (ptr->NodeName != NULL)
+        DSC_free(ptr->NodeName);
 
 }

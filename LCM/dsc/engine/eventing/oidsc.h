@@ -813,7 +813,7 @@ FILE_EVENT1(4410, LCMProtocolVersion1InUse_Impl, LOG_INFO, PAL_T("Job %s : \nUsi
 #else
 #define LCMAgentAttemptRegistration(a0, a1, a2) LCMAgentAttemptRegistration_Impl(0, 0, tcs(a0), tcs(a1), tcs(a2))
 #endif
-FILE_EVENT3(4411, LCMAgentAttemptRegistration_Impl, LOG_INFO, PAL_T("Job %1 : \nAttempt to register the Dsc Agent AgentId %2 with Server URL %3 since RegistrationKey was specified."), const TChar*, const TChar*, const TChar*)
+FILE_EVENT3(4411, LCMAgentAttemptRegistration_Impl, LOG_INFO, PAL_T("Job %s : \nAttempt to register the Dsc Agent AgentId %s with Server URL %s since RegistrationKey was specified."), const TChar*, const TChar*, const TChar*)
 #if defined(CONFIG_ENABLE_DEBUG)
 #define LCMServerRegCertGenFailed(a0, a1) LCMServerRegCertGenFailed_Impl(__FILE__, __LINE__, tcs(a0), tcs(a1))
 #else

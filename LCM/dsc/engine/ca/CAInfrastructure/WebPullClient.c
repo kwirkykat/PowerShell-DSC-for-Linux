@@ -2760,68 +2760,79 @@ MI_Result Pull_Register(MI_Char* serverURL,
 
 extern MI_Char* RunCommand(const MI_Char* command);
 
-MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext, 
-                                                      _In_ MI_Instance *metaConfig,
-                                                      _In_ MI_Instance *statusReport,
-                                                      _In_ MI_Uint32 isStatusReport,
-                                                      _Out_ MI_Uint32* getActionStatusCode,
-                                                      _Outptr_result_maybenull_ MI_Instance **extendedError)
-{
-    
-    MI_Result r = MI_RESULT_OK;
+MI_Result MI_CALL Pull_SendStatusReport(
+    _In_ LCMProviderContext *lcmContext, 
+    _In_ MI_Instance *metaConfig,
+    _In_ MI_Instance *statusReport,
+    _In_ MI_Uint32 isStatusReport,
+    _Out_ MI_Uint32* getActionStatusCode,
+    _Outptr_result_maybenull_ MI_Instance **extendedError)
+{  
+    MI_Result miResult = MI_RESULT_OK;
     const char *emptyString = "";
     MI_Char actionUrl[MAX_URL_LENGTH];
-    char dataBuffer[10000];
 
-    char * getActionStatus = NULL;
-    long responseCode;
+    int maxReportSize = 1024 * sizeof(char);
+    char *report = DSC_malloc(maxReportSize, NitsHere());
+    //char *dataBuffer = malloc(maxReportSize + 30);
+
+    char *getActionStatus = NULL;
+    long responseCode = 3000;
     
     CURL *curl;
     CURLcode res;
     struct Chunk headerChunk;
     struct Chunk dataChunk;
-    struct curl_slist *list = NULL;
+    struct curl_slist *curlHttpHeader = NULL;
     MI_Value managerInstances;
     MI_Value currentReportServer;
     MI_Value agentId;
     MI_Value serverURL;
     MI_Value endTime;
     MI_Uint32 flags;
-    int i;
+    int managerInstanceIndex;
     const char* commandFormat;
     const char* reportText;
     int bAtLeastOneReportSuccess = 0;
 
-    r = DSC_MI_Instance_GetElement(metaConfig, MSFT_DSCMetaConfiguration_ReportManagers, &managerInstances, NULL, &flags, NULL);
-    if (r != MI_RESULT_OK || (flags & MI_FLAG_NULL))
+    char *reportArguments[15] = {NULL};
+
+    enum reportType {Start, Error, End};
+
+    miResult = DSC_MI_Instance_GetElement(metaConfig, MSFT_DSCMetaConfiguration_ReportManagers, &managerInstances, NULL, &flags, NULL);
+    if (miResult != MI_RESULT_OK || (flags & MI_FLAG_NULL))
     {
         // Unable to find report managers, don't report
         return MI_RESULT_OK;
     }
 
-    r = GetSSLOptions(extendedError);
-    if( r != MI_RESULT_OK)
+    miResult = GetSSLOptions(extendedError);
+    if (miResult != MI_RESULT_OK)
     {
-        return r;
+        return miResult;
     }
 
-    r = DSC_MI_Instance_GetElement(metaConfig, "AgentId", &agentId, NULL, NULL, NULL);
+    miResult = DSC_MI_Instance_GetElement(metaConfig, "AgentId", &agentId, NULL, NULL, NULL);
 
-    list = curl_slist_append(list, "Accept: application/json");
-    list = curl_slist_append(list, "Content-Type: application/json; charset=utf-8");
-    list = curl_slist_append(list, "ProtocolVersion: 2.0");
+    curlHttpHeader = curl_slist_append(curlHttpHeader, "Accept: application/json");
+    curlHttpHeader = curl_slist_append(curlHttpHeader, "Content-Type: application/json; charset=utf-8");
+    curlHttpHeader = curl_slist_append(curlHttpHeader, "ProtocolVersion: 2.0");
 
-    for (i = 0; i < managerInstances.stringa.size; ++i)
+    for (managerInstanceIndex = 0; managerInstanceIndex < managerInstances.stringa.size; ++managerInstanceIndex)
     {
-        r = MI_Instance_GetElement((MI_Instance*)managerInstances.stringa.data[i], MSFT_ServerURL_Name, &serverURL, NULL, NULL, NULL);
+        miResult = MI_Instance_GetElement((MI_Instance*)managerInstances.stringa.data[managerInstanceIndex], MSFT_ServerURL_Name, &serverURL, NULL, NULL, NULL);
 
-        r = MI_Instance_GetElement(statusReport, REPORTING_ENDTIME, &endTime, NULL, &flags, 0);
-        if (r != MI_RESULT_OK || (flags & MI_FLAG_NULL) || (endTime.datetime.u.timestamp.year == 0))
+/*
+        miResult = MI_Instance_GetElement(statusReport, REPORTING_ENDTIME, &endTime, NULL, &flags, 0);
+        if (miResult != MI_RESULT_OK || (flags & MI_FLAG_NULL) || (endTime.datetime.u.timestamp.year == 0))
         {
-            // not the End report
+            // Not the end report
             commandFormat =  DSC_SCRIPT_PATH "/StatusReport.sh %s StartTime";
             snprintf(dataBuffer, 10000, commandFormat, g_ConfigurationDetails.jobGuidString);
         }
+
+
+
         else
         {
             if (g_currentError[0] == '\0')
@@ -2837,30 +2848,159 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
                     snprintf(dataBuffer, 10000, commandFormat, g_ConfigurationDetails.jobGuidString, g_currentError);
                 }
                 else
-                {
-                    commandFormat =  DSC_SCRIPT_PATH "/StatusReport.sh %s EndTime \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" ";
-                    snprintf(dataBuffer, 10000, commandFormat, g_ConfigurationDetails.jobGuidString, g_currentError, g_rnids->SourceInfo,
+                {            
+                    snprintf(dataBuffer, 10000, commandFormat, g_ConfigurationDetails.jobGuidString, g_rnids->NodeName, g_currentError, "en-US", "FakeMAC", g_rnids->SourceInfo,
                              g_rnids->ModuleName, g_rnids->DurationInSeconds, g_rnids->InstanceName, g_rnids->StartDate, g_rnids->ResourceName,
-                             g_rnids->ModuleVersion, g_rnids->RebootRequested, g_rnids->ResourceId, g_rnids->ConfigurationName, g_rnids->InDesiredState);
+                             g_rnids->ModuleVersion, g_rnids->RebootRequested, g_rnids->ResourceId, g_rnids->ConfigurationName, g_rnids->InDesiredState, "Blah");
                     Destroy_StatusReport_RNIDS(g_rnids);
-                    g_rnids = NULL;
-                    
+                    g_rnids = NULL; 
                 }
             }
         }
+*/
+        report[0] = '\0';
 
-        reportText = RunCommand(dataBuffer);
+        // Opening report bracket
+        if ((maxReportSize - strlen(report) - 2) > 0)
+        {
+            snprintf(report + strlen(report), maxReportSize - strlen(report), "{");
+        }
+
+        // JobId
+        if ((maxReportSize - strlen(report) - 2) > 0)
+        {
+            snprintf(report + strlen(report), maxReportSize - strlen(report), "\"%s\":\"%s\"", REPORTING_JOBID, g_ConfigurationDetails.jobGuidString);
+        }
+
+        // OperationType
+        if ((maxReportSize - strlen(report) - 2) > 0)
+        {
+            snprintf(report + strlen(report), maxReportSize - strlen(report), ", \"%s\":\"%s\"", REPORTING_OPERATIONTYPE, "Initial");
+        }
+
+        // ReportFormatVersion
+        if ((maxReportSize - strlen(report) - 2) > 0)
+        {
+            snprintf(report + strlen(report), maxReportSize - strlen(report), ", \"%s\":\"%s\"", REPORTING_REPORTFORMATVERSION, "2.0");
+        }
+
+        // ConfigurationVersion
+        if ((maxReportSize - strlen(report) - 2) > 0)
+        {
+            snprintf(report + strlen(report), maxReportSize - strlen(report), ", \"%s\":\"%s\"", REPORTING_CONFIGURATIONVERSION, "2.0.0");
+        }
+
+        // RefreshMode
+        if ((maxReportSize - strlen(report) - 2) > 0)
+        {
+            snprintf(report + strlen(report), maxReportSize - strlen(report), ", \"%s\":\"%s\"", REPORTING_MODE, "Pull");
+        }
+
+        // Status
+        if ((maxReportSize - strlen(report) - 2) > 0)
+        {
+            snprintf(report + strlen(report), maxReportSize - strlen(report), ", \"%s\":\"%s\"", REPORTING_STATUS, "Success");
+        }
+
+        // End Time
+        /*miResult = MI_Instance_GetElement(statusReport, REPORTING_ENDTIME, &endTime, NULL, &flags, 0);
+        if (!(miResult != MI_RESULT_OK || (flags & MI_FLAG_NULL) || (endTime.datetime.u.timestamp.year == 0)))
+        {
+            if ((maxReportSize - strlen(report) - 2) > 0)
+            {
+                snprintf(report + strlen(report), maxReportSize - strlen(report), ", \"%s\":\"%s\"", REPORTING_ENDTIME, endTime);
+            }
+        }*/
+
+        if (g_rnids != NULL)
+        {
+            // StartTime
+            if ((maxReportSize - strlen(report) - 2) > 0)
+            {
+                snprintf(report + strlen(report), maxReportSize - strlen(report), ", \"%s\":\"%s\"", REPORTING_STARTTIME, g_rnids->StartDate);
+            }
+
+            // RebootRequested
+            if ((maxReportSize - strlen(report) - 2) > 0)
+            {
+                snprintf(report + strlen(report), maxReportSize - strlen(report), ", \"%s\":\"%s\"", REPORTING_REBOOTREQUESTED, g_rnids->RebootRequested);
+            }
+        }
+
+        // Errors
+        if (g_currentError[0] != '\0')
+        {
+            if ((maxReportSize - strlen(report) - 2) > 0)
+            {
+                snprintf(report + strlen(report), maxReportSize - strlen(report), ", \"%s\":[\"%s\"]", REPORTING_INTERNALERRORS, g_currentError);
+            }
+        }
+
+        // StatusData
+        if ((maxReportSize - strlen(report) - 2) > 0)
+        {
+            int maxStatusDataSize = maxReportSize - strlen(report) - 2;
+            char *statusData = DSC_malloc(maxStatusDataSize, NitsHere());
+            statusData[0] = '\0';
+
+            // Locale
+            snprintf(statusData + strlen(statusData), maxStatusDataSize - strlen(statusData), "{\\\"%s\\\":\\\"%s\\\"}", REPORTING_LOCALE, "en-US");
+
+            // HostName
+            snprintf(statusData + strlen(statusData), maxStatusDataSize - strlen(statusData), "{\\\"%s\\\":\\\"%s\\\"}", REPORTING_LOCALE, "en-US");
+
+            // LCMVersion
+            snprintf(statusData + strlen(statusData), maxStatusDataSize - strlen(statusData), "{\\\"%s\\\":\\\"%s\\\"}", REPORTING_LOCALE, "en-US");
+
+            // IPV4Addresses
+            snprintf(statusData + strlen(statusData), maxStatusDataSize - strlen(statusData), "{\\\"%s\\\":\\\"%s\\\"}", REPORTING_LOCALE, "en-US");
+
+            // IPV6Addresses
+            snprintf(statusData + strlen(statusData), maxStatusDataSize - strlen(statusData), "{\\\"%s\\\":\\\"%s\\\"}", REPORTING_LOCALE, "en-US");
+
+            // MACAddresses
+            snprintf(statusData + strlen(statusData), maxStatusDataSize - strlen(statusData), "{\\\"%s\\\":\\\"%s\\\"}", REPORTING_LOCALE, "en-US");
+
+            // NumberOfResources
+            snprintf(statusData + strlen(statusData), maxStatusDataSize - strlen(statusData), "{\\\"%s\\\":\\\"%s\\\"}", REPORTING_NUMBEROFRESOURCES, "100");
+
+            // DurationInSeconds
+            snprintf(statusData + strlen(statusData), maxStatusDataSize - strlen(statusData), "{\\\"%s\\\":\\\"%s\\\"}", REPORTING_LOCALE, "en-US");
+
+            // ResourcesInDesiredState
+            snprintf(statusData + strlen(statusData), maxStatusDataSize - strlen(statusData), "{\\\"%s\\\":\\\"%s\\\"}", REPORTING_RESOURCESINDESIREDSTATE, "en-US");
+
+            // ResourcesNotInDesiredState
+            snprintf(statusData + strlen(statusData), maxStatusDataSize - strlen(statusData), "{\\\"%s\\\":\\\"%s\\\"}", REPORTING_RESOURCESNOTINDESIREDSTATE, "en-US");
+
+            snprintf(report + strlen(report), maxReportSize - strlen(report), ", \"%s\":[\"%s\"]", "StatusData", statusData);
+
+            DSC_free(statusData);
+        }
+
+        // Ending report bracket
+        if ((maxReportSize - strlen(report) - 1) > 0)
+        {
+            snprintf(report + strlen(report), maxReportSize - strlen(report), "}");
+        }
+
+        reportText = report;
+
+        // $0 JobId OperationType RefreshMode Status ReportFormatVersion ConfigurationVersion StartTime EndTime RebootRequested StatusData[] Errors[] AdditionalData[]
+        //commandFormat = DSC_SCRIPT_PATH "/StatusReport.sh \"%s\"";
+        //snprintf(dataBuffer, maxReportSize + 30, commandFormat, report);
+        //reportText = RunCommand(dataBuffer);
         
         curl = curl_easy_init();
 
-	r = SetGeneralCurlOptions(curl, extendedError);
-	if (r != MI_RESULT_OK)
-	{
-	    DSC_free(reportText);
-	    curl_easy_cleanup(curl);
-	    return r;
-	}	
-	
+        miResult = SetGeneralCurlOptions(curl, extendedError);
+        if (miResult != MI_RESULT_OK)
+        {
+            DSC_free(report);
+            curl_easy_cleanup(curl);
+            return miResult;
+        }	
+        
         Snprintf(actionUrl, MAX_URL_LENGTH, "%s/Nodes(AgentId='%s')/SendReport", serverURL.string, agentId.string);
         curl_easy_setopt(curl, CURLOPT_URL, actionUrl);
         
@@ -2869,7 +3009,7 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
         dataChunk.data = (char *)malloc(1);
         dataChunk.size = 0;
         
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHttpHeader);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, reportText);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_HEADERDATA, &headerChunk);
@@ -2884,8 +3024,8 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
         {
             // Error on communication.  Go to next report.
             curl_easy_cleanup(curl);
-            
-            DSC_free(reportText);
+
+            DSC_free(report);
             free(headerChunk.data);
             free(dataChunk.data);
             continue;
@@ -2898,7 +3038,7 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
             // Error on register
             curl_easy_cleanup(curl);
             
-            DSC_free(reportText);
+            DSC_free(report);
             free(headerChunk.data);
             free(dataChunk.data);
             continue;
@@ -2908,13 +3048,12 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
 
         curl_easy_cleanup(curl);
         
-        DSC_free(reportText);
+        DSC_free(report);
         free(headerChunk.data);
         free(dataChunk.data);
-        
     }
 
-    curl_slist_free_all(list);
+    curl_slist_free_all(curlHttpHeader);
     
     if (bAtLeastOneReportSuccess == 1)
     {
@@ -2922,9 +3061,8 @@ MI_Result MI_CALL Pull_SendStatusReport(_In_ LCMProviderContext *lcmContext,
     }
     else
     {
-      MI_Char statusCodeValue[MAX_STATUSCODE_SIZE] = {0};
-      Stprintf(statusCodeValue, MAX_STATUSCODE_SIZE, MI_T("%d"), responseCode);
-      return GetCimMIError1Param(MI_RESULT_FAILED, extendedError, ID_PULL_REPORTINGFAILED, statusCodeValue);
+        MI_Char statusCodeValue[MAX_STATUSCODE_SIZE] = {0};
+        Stprintf(statusCodeValue, MAX_STATUSCODE_SIZE, MI_T("%ld"), responseCode);
+        return GetCimMIError1Param(MI_RESULT_FAILED, extendedError, ID_PULL_REPORTINGFAILED, statusCodeValue);
     }
-
 }
