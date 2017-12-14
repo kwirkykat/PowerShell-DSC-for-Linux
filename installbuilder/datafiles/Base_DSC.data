@@ -218,14 +218,14 @@ cp -f /opt/microsoft/${{SHORT_NAME}}/mof/MSFT_LogResource.schema.mof  $CONFIG_SY
 
 for prov in ${{PROVIDERS}}; do
 #if BUILD_OMS == 1
-    cp -f /opt/microsoft/${{SHORT_NAME}}/etc/MSFT_nx${prov}Resource.reg $OMI_REGISTER_DIR/root-oms
+    cp -f /opt/microsoft/${{SHORT_NAME}}/etc/MSFT_nx${prov}Resource${RESOURCE_SUFFIX}.reg $OMI_REGISTER_DIR/root-oms
 #else
-    cp -f /opt/microsoft/${{SHORT_NAME}}/etc/MSFT_nx${prov}Resource.reg $OMI_REGISTER_DIR/root-Microsoft-DesiredStateConfiguration
+    cp -f /opt/microsoft/${{SHORT_NAME}}/etc/MSFT_nx${prov}Resource${RESOURCE_SUFFIX}.reg $OMI_REGISTER_DIR/root-Microsoft-DesiredStateConfiguration
 #endif
-    mkdir -p $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/schema/MSFT_nx${prov}Resource/ $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/registration/MSFT_nx${prov}Resource/
-    cp -f /opt/microsoft/${{SHORT_NAME}}/mof/MSFT_nx${prov}Resource.schema.mof $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/schema/MSFT_nx${prov}Resource/
-    cp -f /opt/microsoft/${{SHORT_NAME}}/mof/MSFT_nx${prov}Resource.registration.mof $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/registration/MSFT_nx${prov}Resource/
-    ln -fs /opt/microsoft/${{SHORT_NAME}}/lib/libMSFT_nx${prov}Resource.so $OMI_LIB/libMSFT_nx${prov}Resource.so
+    mkdir -p $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/schema/MSFT_nx${prov}Resource${RESOURCE_SUFFIX}/ $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/registration/MSFT_nx${prov}Resource${RESOURCE_SUFFIX}/
+    cp -f /opt/microsoft/${{SHORT_NAME}}/mof/MSFT_nx${prov}Resource${RESOURCE_SUFFIX}.schema.mof $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/schema/MSFT_nx${prov}Resource${RESOURCE_SUFFIX}/
+    cp -f /opt/microsoft/${{SHORT_NAME}}/mof/MSFT_nx${prov}Resource${RESOURCE_SUFFIX}.registration.mof $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/registration/MSFT_nx${prov}Resource${RESOURCE_SUFFIX}/
+    ln -fs /opt/microsoft/${{SHORT_NAME}}/lib/libMSFT_nx${prov}Resource${RESOURCE_SUFFIX}.so $OMI_LIB/libMSFT_nx${prov}Resource${RESOURCE_SUFFIX}.so
 done
 
 chmod a+rx $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/
@@ -352,7 +352,7 @@ if [ "$1" = "0" -o "$1" = "remove" -o "$1" = "purge" ]; then
     rm -f /etc/cron.d/dsc
 #endif
     for prov in ${{PROVIDERS}}; do
-        rm -f $OMI_LIB/libMSFT_nx${prov}Resource.so
+        rm -f $OMI_LIB/libMSFT_nx${prov}Resource${RESOURCE_SUFFIX}.so
     done
 fi
 

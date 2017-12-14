@@ -121,18 +121,18 @@ OMI_CONFIG_PATH:=$(CONFIG_SYSCONFDIR)/dsc/configuration
 OMI_REG_PATH:=$(BIN_PATH)/omi
 OMI_REG:=$(OMI_BIN_PATH)/omireg -n root/Microsoft/DesiredStateConfiguration \
 	-o @requestor@
-SCHEMA:=Resource.schema.mof
-REGISTER:=Resource.registration.mof
+SCHEMA:=.schema.mof
+REGISTER:=.registration.mof
 
 # $(call REGISTER_PROVIDER,provider-name)
 define REGISTER-PROVIDER
 	echo ...registering: $1;
-	$(MKDIR) $(OMI_CONFIG_PATH)/{registration,schema}/MSFT_$1Resource; \
-	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1$(SCHEMA) \
-	    $(OMI_CONFIG_PATH)/schema/MSFT_$1Resource/MSFT_$1$(SCHEMA); \
-	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1$(REGISTER) \
-	    $(OMI_CONFIG_PATH)/registration/MSFT_$1Resource/MSFT_$1$(REGISTER); \
-	$(OMI_REG) $(BIN_PATH)/libMSFT_$1Resource.so;
+	$(MKDIR) $(OMI_CONFIG_PATH)/{registration,schema}/MSFT_$1Resource$(RESOURCE_SUFFIX); \
+	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1Resource$(RESOURCE_SUFFIX)$(SCHEMA) \
+	    $(OMI_CONFIG_PATH)/schema/MSFT_$1Resource$(RESOURCE_SUFFIX)/MSFT_$1Resource$(RESOURCE_SUFFIX)$(SCHEMA); \
+	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1Resource$(RESOURCE_SUFFIX)$(REGISTER) \
+	    $(OMI_CONFIG_PATH)/registration/MSFT_$1Resource$(RESOURCE_SUFFIX)/MSFT_$1Resource$(RESOURCE_SUFFIX)$(REGISTER); \
+	$(OMI_REG) $(BIN_PATH)/libMSFT_$1Resource$(RESOURCE_SUFFIX).so;
 endef
 
 .PHONY: reg
@@ -195,13 +195,13 @@ $(BIN_PATH)/%.o : $(PROVIDER_PATH)/$1/%.cpp
 $(addprefix $(BIN_PATH)/$1_,$(GENERATED_OBJS)) : | $(BIN_PATH)
 
 # add this shared object to the "all" target
-all: $(BIN_PATH)/libMSFT_$1Resource.so
+all: $(BIN_PATH)/libMSFT_$1Resource$(RESOURCE_SUFFIX).so
 
-$(BIN_PATH)/libMSFT_$1Resource.so : \
+$(BIN_PATH)/libMSFT_$1Resource$(RESOURCE_SUFFIX).so : \
 	$(addprefix $(BIN_PATH)/,$(COMMON_OBJS)) \
 	$(addprefix $(BIN_PATH)/$1_,$(GENERATED_OBJS)) \
-	$(BIN_PATH)/MSFT_$1Resource.o
-	@echo ...linking: $(BIN_PATH)/libMSFT_$1Resource.so
+	$(BIN_PATH)/MSFT_$1Resource$(RESOURCE_SUFFIX).o
+	@echo ...linking: $(BIN_PATH)/libMSFT_$1Resource$(RESOURCE_SUFFIX).so
 	$(CXX) -shared -o $$@ $$^ -L$(LIBDIR) -lmi -lmicodec -lmofparser -lmofparsererror -lprotocol -lomi_error -lxmlserializer -lbase -lpal
 endef
 

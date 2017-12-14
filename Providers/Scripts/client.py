@@ -11,6 +11,13 @@ import ctypes
 
 DO_TRACE = True
 DO_VERBOSE_TRACE  = False
+
+pathToCurrentScript = realpath(__file__)
+pathToDscScriptsFolder, currentFileName = split(pathToCurrentScript)
+helperLibPath = join(pathToDscScriptsFolder, 'helperlib.py')
+
+helperlib = imp.load_source('helperlib', helperLibPath)
+
 ScriptsDir = "<DSC_SCRIPT_PATH>"
 VarDir = "<PYTHON_PID_DIR>"
 
