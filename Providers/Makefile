@@ -49,7 +49,6 @@ CXXFLAGS+=-Wall
 CXXFLAGS+=-ggdb
 #CXXFLAGS+=-O2
 CXXFLAGS+=-DDSC_SCRIPT_PATH=\"$(DSC_SCRIPT_PATH)\"
-CXXFLAGS+=-DDSC_VERISON_RESOURCE_MODIFIER=\"$(DSC_VERISON_RESOURCE_MODIFIER)\"
 
 # common source files
 COMMON_SOURCES:=debug_tags.cpp
@@ -58,8 +57,8 @@ COMMON_SOURCES+=PythonProvider.cpp
 COMMON_OBJS:=$(COMMON_SOURCES:.cpp=.o)
 
 # these are the names of the files that are auto-generated for each provider
-GENERATED_SOURCES:=module$(DSC_VERISON_RESOURCE_MODIFIER).c
-GENERATED_SOURCES+=schema$(DSC_VERISON_RESOURCE_MODIFIER).c
+GENERATED_SOURCES:=module.c
+GENERATED_SOURCES+=schema.c
 GENERATED_OBJS:=$(GENERATED_SOURCES:.c=.o)
 
 # list of providers
@@ -120,20 +119,19 @@ OMI_BIN_PATH:=$(CONFIG_BINDIR)
 OMI_LIB_PATH:=$(CONFIG_LIBDIR)
 OMI_CONFIG_PATH:=$(CONFIG_SYSCONFDIR)/dsc/configuration
 OMI_REG_PATH:=$(BIN_PATH)/omi
-OMI_REG:=$(OMI_BIN_PATH)/omireg -n root/Microsoft/DesiredStateConfiguration \
+OMI_REG:=$(OMI_BIN_PATH)/omireg -n $(DSC_NAMESPACE) \
 	-o @requestor@
-SCHEMA:=.schema.mof
-REGISTER:=.registration.mof
+SCHEMA:=Resource.schema.mof
+REGISTER:=Resource.registration.mof
 
 # $(call REGISTER_PROVIDER,provider-name)
 define REGISTER-PROVIDER
 	echo ...registering: $1;
-	$(MKDIR) $(OMI_CONFIG_PATH)/{registration,schema}/MSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER); \
-	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1Resource$(SCHEMA) \
-	    $(OMI_CONFIG_PATH)/schema/MSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER)/MSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER)$(SCHEMA); \
-	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1Resource$(REGISTER) \
-	    $(OMI_CONFIG_PATH)/registration/MSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER)/MSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER)$(REGISTER); \
-	$(OMI_REG) $(BIN_PATH)/libMSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER).so;
+	$(MKDIR) $(OMI_CONFIG_PATH)/{registration,schema}/MSFT_$1Resource; \
+	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1$(SCHEMA) \
+	    $(OMI_CONFIG_PATH)/schema/MSFT_$1Resource/MSFT_$1$(SCHEMA); \
+	$(SED) -e 's@'"<DSC_NAMESPACE>"'@'"$(DSC_NAMESPACE)"'@g' $(PROVIDER_PATH)/$1/MSFT_$1$(REGISTER) > $(OMI_CONFIG_PATH)/registration/MSFT_$1Resource/MSFT_$1$(REGISTER); \
+	$(OMI_REG) $(BIN_PATH)/libMSFT_$1Resource.so;
 endef
 
 .PHONY: reg
@@ -159,10 +157,10 @@ reg :
 define COMPILE-WITH-DEPEND
 	@echo ...compiling: $$(@F)
 	$(COMPILE.cpp) $($2) $(MKDEP) $$< -o $$@
-	@-$(COPY) $1$$*$(DSC_VERISON_RESOURCE_MODIFIER).d $1$$*$(DSC_VERISON_RESOURCE_MODIFIER).P;
+	@-$(COPY) $1$$*.d $1$$*.P;
 	@$(SED) -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$$$//' -e '/^$$$$/ d' \
-	    -e 's/$$$$/ :/' < $1$$*$(DSC_VERISON_RESOURCE_MODIFIER).d >> $1$$*$(DSC_VERISON_RESOURCE_MODIFIER).P;
-	@$(RM) $1$$*$(DSC_VERISON_RESOURCE_MODIFIER).d
+	    -e 's/$$$$/ :/' < $1$$*.d >> $1$$*.P;
+	@$(RM) $1$$*.d
 endef
 
 
@@ -186,23 +184,23 @@ $(addprefix $(BIN_PATH)/,$(COMMON_OBJS)) : | $(BIN_PATH)
 define PER-PROVIDER-RULES
 
 # compile rule
-$(BIN_PATH)/$1_%$(DSC_VERISON_RESOURCE_MODIFIER).o : $(PROVIDER_PATH)/$1/%.c
+$(BIN_PATH)/$1_%.o : $(PROVIDER_PATH)/$1/%.c
 	$(call COMPILE-WITH-DEPEND,$(BIN_PATH)/$1_)
 
-$(BIN_PATH)/%$(DSC_VERISON_RESOURCE_MODIFIER).o : $(PROVIDER_PATH)/$1/%.cpp
+$(BIN_PATH)/%.o : $(PROVIDER_PATH)/$1/%.cpp
 	$(call COMPILE-WITH-DEPEND,$(BIN_PATH)/)
 
 # add bin path dependencies to the object files
 $(addprefix $(BIN_PATH)/$1_,$(GENERATED_OBJS)) : | $(BIN_PATH)
 
 # add this shared object to the "all" target
-all: $(BIN_PATH)/libMSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER).so
+all: $(BIN_PATH)/libMSFT_$1Resource.so
 
-$(BIN_PATH)/libMSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER).so : \
+$(BIN_PATH)/libMSFT_$1Resource.so : \
 	$(addprefix $(BIN_PATH)/,$(COMMON_OBJS)) \
 	$(addprefix $(BIN_PATH)/$1_,$(GENERATED_OBJS)) \
-	$(BIN_PATH)/MSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER).o
-	@echo ...linking: $(BIN_PATH)/libMSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER).so
+	$(BIN_PATH)/MSFT_$1Resource.o
+	@echo ...linking: $(BIN_PATH)/libMSFT_$1Resource.so
 	$(CXX) -shared -o $$@ $$^ -L$(LIBDIR) -lmi -lmicodec -lmofparser -lmofparsererror -lprotocol -lomi_error -lxmlserializer -lbase -lpal
 endef
 

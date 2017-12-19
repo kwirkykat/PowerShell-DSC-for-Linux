@@ -12,8 +12,8 @@ import codecs
 import imp
 
 pathToCurrentScript = realpath(__file__)
-pathToDscScriptsFolder, currentFileName = split(pathToCurrentScript)
-helperLibPath = join(pathToDscScriptsFolder, 'helperlib.py')
+pathToCommonScriptsFolder, currentFileName = split(pathToCurrentScript)
+helperLibPath = join(pathToCommonScriptsFolder, 'helperlib.py')
 
 helperlib = imp.load_source('helperlib', helperLibPath)
 

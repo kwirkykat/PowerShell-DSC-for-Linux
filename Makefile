@@ -19,17 +19,17 @@ OAAS_KEYPATH=/etc/opt/microsoft/omsagent/certs/oms.key
 OAAS_THUMBRPINT=/etc/opt/microsoft/omsagent/certs/oms.thumbprint
 PYTHON_PID_DIR=/var/opt/microsoft/omsconfig
 BUILD_OMS_VAL=1
-DSC_VERISON_RESOURCE_MODIFIER=_OMS
 else
 CONFIG_SYSCONFDIR_DSC=dsc
-DSC_NAMESPACE=root/Microsoft/DesiredStateConfiguration
+DSC_NAMESPACE=root/testing
 OAAS_CERTPATH=$$CONFIG_CERTSDIR/oaas.crt
 OAAS_KEYPATH=$$CONFIG_CERTSDIR/oaas.key
 OAAS_THUMBPRINT=$$CONFIG_CERTSDIR/oaas.thumbprint
 PYTHON_PID_DIR=/var/opt/omi
 BUILD_OMS_VAL=0
-DSC_VERISON_RESOURCE_MODIFIER=_DSC
 endif
+
+export
 
 all:
 	rm -rf release/*.rpm release/*.deb
@@ -166,14 +166,14 @@ nx:
 	STAGINGDIR="output/staging/$@/DSCResources"; \
 	cat Providers/Modules/$@.psd1 | sed "s@<MODULE_VERSION>@$${VERSION}@" > intermediate/Modules/$@.psd1; \
 	for current in $$PROVIDERS; do \
-		mkdir -p $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/$(PF_ARCH)/Scripts/{2.4x-2.5x,2.6x-2.7x,3.x}/Scripts; \
+		mkdir -p $$STAGINGDIR/MSFT_$${current}Resource/$(PF_ARCH)/Scripts/{2.4x-2.5x,2.6x-2.7x,3.x}/Scripts; \
 		cp intermediate/Modules/$@.psd1 output/staging/$@/; \
-		sed -i -e 's/'"$${current}Resource"'/'"$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)"'/g' < Providers/$${current}/MSFT_$${current}Resource.schema.mof > $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER).schema.mof; \
-		sed -i -e 's/'"$${current}Resource"'/'"$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)"'/g' < Providers/$${current}/MSFT_$${current}Resource.reg > $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER).reg; \
-		cp Providers/bin/libMSFT_$${current}Resource(DSC_VERISON_RESOURCE_MODIFIER).so $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/$(PF_ARCH)/libMSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER).so; \
-		cp Providers/Scripts/2.4x-2.5x/Scripts/$${current}.py $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/$(PF_ARCH)/Scripts/2.4x-2.5x/Scripts; \
-		cp Providers/Scripts/2.6x-2.7x/Scripts/$${current}.py $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/$(PF_ARCH)/Scripts/2.6x-2.7x/Scripts; \
-		cp Providers/Scripts/3.x/Scripts/$${current}.py $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/$(PF_ARCH)/Scripts/3.x/Scripts; \
+		sed -i -e 's/'"$${current}Resource"'/'"$${current}Resource"'/g' Providers/$${current}/MSFT_$${current}Resource.schema.mof > $$STAGINGDIR/MSFT_$${current}Resource/MSFT_$${current}Resource.schema.mof; \
+		sed -i -e 's/'"$${current}Resource"'/'"$${current}Resource"'/g' Providers/$${current}/MSFT_$${current}Resource.reg > $$STAGINGDIR/MSFT_$${current}Resource/MSFT_$${current}Resource.reg; \
+		cp Providers/bin/libMSFT_$${current}Resource.so $$STAGINGDIR/MSFT_$${current}Resource/$(PF_ARCH)/libMSFT_$${current}Resource.so; \
+		cp Providers/Scripts/2.4x-2.5x/Scripts/$${current}.py $$STAGINGDIR/MSFT_$${current}Resource/$(PF_ARCH)/Scripts/2.4x-2.5x/Scripts; \
+		cp Providers/Scripts/2.6x-2.7x/Scripts/$${current}.py $$STAGINGDIR/MSFT_$${current}Resource/$(PF_ARCH)/Scripts/2.6x-2.7x/Scripts; \
+		cp Providers/Scripts/3.x/Scripts/$${current}.py $$STAGINGDIR/MSFT_$${current}Resource/$(PF_ARCH)/Scripts/3.x/Scripts; \
 	done;\
 	cd output/staging; \
 	zip -r $@_$${VERSION}.zip $@; \
@@ -181,20 +181,21 @@ nx:
 	mv $@_$${VERSION}.zip ../../release/
 else
 nx:
+	echo REPLACING...
 	rm -rf output/staging; \
 	VERSION="1.0"; \
 	PROVIDERS="nxFile nxScript nxUser nxGroup nxService nxPackage nxEnvironment nxSshAuthorizedKeys nxArchive nxFileLine"; \
 	STAGINGDIR="output/staging/$@/DSCResources"; \
 	cat Providers/Modules/$@.psd1 | sed "s@<MODULE_VERSION>@$${VERSION}@" > intermediate/Modules/$@.psd1; \
 	for current in $$PROVIDERS; do \
-		mkdir -p $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/$(PF_ARCH)/Scripts/{2.4x-2.5x,2.6x-2.7x,3.x}/Scripts; \
+		mkdir -p $$STAGINGDIR/MSFT_$${current}Resource/$(PF_ARCH)/Scripts/{2.4x-2.5x,2.6x-2.7x,3.x}/Scripts; \
 		cp intermediate/Modules/$@.psd1 output/staging/$@/; \
-		sed -i -e 's/'"$${current}Resource"'/'"$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)"'/g' < Providers/$${current}/MSFT_$${current}Resource.schema.mof > $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER).schema.mof; \
-		sed -i -e 's/'"$${current}Resource"'/'"$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)"'/g' < Providers/$${current}/MSFT_$${current}Resource.reg > $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER).reg; \
-		cp Providers/bin/libMSFT_$${current}Resource(DSC_VERISON_RESOURCE_MODIFIER).so $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/$(PF_ARCH)/libMSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER).so; \
-		cp Providers/Scripts/2.4x-2.5x/Scripts/$${current}.py $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/$(PF_ARCH)/Scripts/2.4x-2.5x/Scripts; \
-		cp Providers/Scripts/2.6x-2.7x/Scripts/$${current}.py $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/$(PF_ARCH)/Scripts/2.6x-2.7x/Scripts; \
-		cp Providers/Scripts/3.x/Scripts/$${current}.py $$STAGINGDIR/MSFT_$${current}Resource$(DSC_VERISON_RESOURCE_MODIFIER)/$(PF_ARCH)/Scripts/3.x/Scripts; \
+		sed -i -e 's/'"${current}Resource"'/'"${current}Resource"'/g' Providers/${current}/MSFT_${current}Resource.schema.mof > $STAGINGDIR/MSFT_${current}Resource/MSFT_${current}Resource.schema.mof; \
+		sed -i -e 's/'"${current}Resource"'/'"${current}Resource"'/g' Providers/${current}/MSFT_${current}Resource.reg > $STAGINGDIR/MSFT_${current}Resource/MSFT_${current}Resource.reg; \
+		cp Providers/bin/libMSFT_$${current}Resource.so $$STAGINGDIR/MSFT_$${current}Resource/$(PF_ARCH)/libMSFT_$${current}Resource.so; \
+		cp Providers/Scripts/2.4x-2.5x/Scripts/$${current}.py $$STAGINGDIR/MSFT_$${current}Resource/$(PF_ARCH)/Scripts/2.4x-2.5x/Scripts; \
+		cp Providers/Scripts/2.6x-2.7x/Scripts/$${current}.py $$STAGINGDIR/MSFT_$${current}Resource/$(PF_ARCH)/Scripts/2.6x-2.7x/Scripts; \
+		cp Providers/Scripts/3.x/Scripts/$${current}.py $$STAGINGDIR/MSFT_$${current}Resource/$(PF_ARCH)/Scripts/3.x/Scripts; \
 	done;\
 	cd output/staging; \
 	zip -r $@_$${VERSION}.zip $@; \
