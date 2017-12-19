@@ -49,6 +49,7 @@ CXXFLAGS+=-Wall
 CXXFLAGS+=-ggdb
 #CXXFLAGS+=-O2
 CXXFLAGS+=-DDSC_SCRIPT_PATH=\"$(DSC_SCRIPT_PATH)\"
+CXXFLAGS+=-DDSC_VERISON_RESOURCE_MODIFIER=\"$(DSC_VERISON_RESOURCE_MODIFIER)\"
 
 # common source files
 COMMON_SOURCES:=debug_tags.cpp
@@ -57,8 +58,8 @@ COMMON_SOURCES+=PythonProvider.cpp
 COMMON_OBJS:=$(COMMON_SOURCES:.cpp=.o)
 
 # these are the names of the files that are auto-generated for each provider
-GENERATED_SOURCES:=module.c
-GENERATED_SOURCES+=schema.c
+GENERATED_SOURCES:=module$(DSC_VERISON_RESOURCE_MODIFIER).c
+GENERATED_SOURCES+=schema$(DSC_VERISON_RESOURCE_MODIFIER).c
 GENERATED_OBJS:=$(GENERATED_SOURCES:.c=.o)
 
 # list of providers
@@ -127,12 +128,12 @@ REGISTER:=.registration.mof
 # $(call REGISTER_PROVIDER,provider-name)
 define REGISTER-PROVIDER
 	echo ...registering: $1;
-	$(MKDIR) $(OMI_CONFIG_PATH)/{registration,schema}/MSFT_$1Resource$(RESOURCE_SUFFIX); \
-	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1Resource$(RESOURCE_SUFFIX)$(SCHEMA) \
-	    $(OMI_CONFIG_PATH)/schema/MSFT_$1Resource$(RESOURCE_SUFFIX)/MSFT_$1Resource$(RESOURCE_SUFFIX)$(SCHEMA); \
-	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1Resource$(RESOURCE_SUFFIX)$(REGISTER) \
-	    $(OMI_CONFIG_PATH)/registration/MSFT_$1Resource$(RESOURCE_SUFFIX)/MSFT_$1Resource$(RESOURCE_SUFFIX)$(REGISTER); \
-	$(OMI_REG) $(BIN_PATH)/libMSFT_$1Resource$(RESOURCE_SUFFIX).so;
+	$(MKDIR) $(OMI_CONFIG_PATH)/{registration,schema}/MSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER); \
+	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1Resource$(SCHEMA) \
+	    $(OMI_CONFIG_PATH)/schema/MSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER)/MSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER)$(SCHEMA); \
+	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1Resource$(REGISTER) \
+	    $(OMI_CONFIG_PATH)/registration/MSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER)/MSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER)$(REGISTER); \
+	$(OMI_REG) $(BIN_PATH)/libMSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER).so;
 endef
 
 .PHONY: reg
@@ -158,10 +159,10 @@ reg :
 define COMPILE-WITH-DEPEND
 	@echo ...compiling: $$(@F)
 	$(COMPILE.cpp) $($2) $(MKDEP) $$< -o $$@
-	@-$(COPY) $1$$*.d $1$$*.P;
+	@-$(COPY) $1$$*$(DSC_VERISON_RESOURCE_MODIFIER).d $1$$*$(DSC_VERISON_RESOURCE_MODIFIER).P;
 	@$(SED) -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$$$//' -e '/^$$$$/ d' \
-	    -e 's/$$$$/ :/' < $1$$*.d >> $1$$*.P;
-	@$(RM) $1$$*.d
+	    -e 's/$$$$/ :/' < $1$$*$(DSC_VERISON_RESOURCE_MODIFIER).d >> $1$$*$(DSC_VERISON_RESOURCE_MODIFIER).P;
+	@$(RM) $1$$*$(DSC_VERISON_RESOURCE_MODIFIER).d
 endef
 
 
@@ -185,23 +186,23 @@ $(addprefix $(BIN_PATH)/,$(COMMON_OBJS)) : | $(BIN_PATH)
 define PER-PROVIDER-RULES
 
 # compile rule
-$(BIN_PATH)/$1_%.o : $(PROVIDER_PATH)/$1/%.c
+$(BIN_PATH)/$1_%$(DSC_VERISON_RESOURCE_MODIFIER).o : $(PROVIDER_PATH)/$1/%.c
 	$(call COMPILE-WITH-DEPEND,$(BIN_PATH)/$1_)
 
-$(BIN_PATH)/%.o : $(PROVIDER_PATH)/$1/%.cpp
+$(BIN_PATH)/%$(DSC_VERISON_RESOURCE_MODIFIER).o : $(PROVIDER_PATH)/$1/%.cpp
 	$(call COMPILE-WITH-DEPEND,$(BIN_PATH)/)
 
 # add bin path dependencies to the object files
 $(addprefix $(BIN_PATH)/$1_,$(GENERATED_OBJS)) : | $(BIN_PATH)
 
 # add this shared object to the "all" target
-all: $(BIN_PATH)/libMSFT_$1Resource$(RESOURCE_SUFFIX).so
+all: $(BIN_PATH)/libMSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER).so
 
-$(BIN_PATH)/libMSFT_$1Resource$(RESOURCE_SUFFIX).so : \
+$(BIN_PATH)/libMSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER).so : \
 	$(addprefix $(BIN_PATH)/,$(COMMON_OBJS)) \
 	$(addprefix $(BIN_PATH)/$1_,$(GENERATED_OBJS)) \
-	$(BIN_PATH)/MSFT_$1Resource$(RESOURCE_SUFFIX).o
-	@echo ...linking: $(BIN_PATH)/libMSFT_$1Resource$(RESOURCE_SUFFIX).so
+	$(BIN_PATH)/MSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER).o
+	@echo ...linking: $(BIN_PATH)/libMSFT_$1Resource$(DSC_VERISON_RESOURCE_MODIFIER).so
 	$(CXX) -shared -o $$@ $$^ -L$(LIBDIR) -lmi -lmicodec -lmofparser -lmofparsererror -lprotocol -lomi_error -lxmlserializer -lbase -lpal
 endef
 
