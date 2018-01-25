@@ -4,7 +4,7 @@
 # ============================================================================
 
 import os
-from os.path import exists, join, realpath, split
+from os.path import dirname, exists, join, realpath
 import sys
 import time
 import inspect
@@ -12,7 +12,7 @@ import codecs
 import imp
 
 pathToCurrentScript = realpath(__file__)
-pathToCommonScriptsFolder, currentFileName = split(pathToCurrentScript)
+pathToCommonScriptsFolder = dirname(pathToCurrentScript)
 helperLibPath = join(pathToCommonScriptsFolder, 'helperlib.py')
 
 helperlib = imp.load_source('helperlib', helperLibPath)
@@ -58,10 +58,11 @@ class DSCLog(object):
 
         if type(log_level) == str:
             try:
-                self.levels.index(log_level)
+                log_level = self.levels.index(log_level)
             except:
                 return
-        else if log_level < 0 or log_level >= len(self.levels):
+        
+        if log_level < 0 or log_level >= len(self.levels):
             return
 
         if log_level > self.current_level:

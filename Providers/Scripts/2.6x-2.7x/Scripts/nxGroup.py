@@ -13,9 +13,22 @@ import imp
 import grp
 import copy
 import fnmatch
-protocol = imp.load_source('protocol', '../protocol.py')
-nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
-helperlib = imp.load_source('helperlib', '../helperlib.py')
+
+from os.path import dirname, realpath, join
+
+pathToCurrentScript = realpath(__file__)
+pathToVersionSpecificScriptsFolder = dirname(pathToCurrentScript)
+pathToVersionSpecificFolder = dirname(pathToVersionSpecificScriptsFolder)
+pathToCommonScriptsFolder = dirname(pathToVersionSpecificFolder)
+
+protocolLibPath = join(pathToCommonScriptsFolder, 'protocol.py')
+nxDSCLogPath = join(pathToCommonScriptsFolder, 'nxDSCLog.py')
+helperLibPath = join(pathToCommonScriptsFolder, 'helperlib.py')
+
+protocol = imp.load_source('protocol', protocolLibPath)
+nxDSCLog = imp.load_source('nxDSCLog', nxDSCLogPath)
+helperlib = imp.load_source('helperlib', helperLibPath)
+
 LG = nxDSCLog.DSCLog
 
 # [ClassVersion("1.0.0"), FriendlyName("nxGroup"),SupportsInventory()]

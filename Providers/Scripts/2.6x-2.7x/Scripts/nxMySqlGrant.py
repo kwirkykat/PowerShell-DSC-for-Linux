@@ -12,8 +12,19 @@ import sys
 import subprocess
 import imp
 
-protocol = imp.load_source('protocol', '../protocol.py')
-nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+from os.path import dirname, realpath, join
+
+pathToCurrentScript = realpath(__file__)
+pathToVersionSpecificScriptsFolder = dirname(pathToCurrentScript)
+pathToVersionSpecificFolder = dirname(pathToVersionSpecificScriptsFolder)
+pathToCommonScriptsFolder = dirname(pathToVersionSpecificFolder)
+
+protocolLibPath = join(pathToCommonScriptsFolder, 'protocol.py')
+nxDSCLogPath = join(pathToCommonScriptsFolder, 'nxDSCLog.py')
+
+protocol = imp.load_source('protocol', protocolLibPath)
+nxDSCLog = imp.load_source('nxDSCLog', nxDSCLogPath)
+
 LG = nxDSCLog.DSCLog
 
 

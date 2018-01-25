@@ -10,13 +10,13 @@ import sys
 import traceback
 import ctypes
 
-from os.path import realpath, split, join
+from os.path import dirname, realpath, join
 
 enableTraceMessages = True
 enableVerboseTraceMessages = False
 
 pathToCurrentScript = realpath(__file__)
-pathToCommonScriptsFolder, currentFileName = split(pathToCurrentScript)
+pathToCommonScriptsFolder = dirname(pathToCurrentScript)
 helperLibPath = join(pathToCommonScriptsFolder, 'helperlib.py')
 
 helperlib = imp.load_source('helperlib', helperLibPath)
@@ -161,7 +161,7 @@ def main(argv):
     fd = socket.fromfd(int(argv[1]), socket.AF_UNIX, socket.SOCK_STREAM)
     read = 1
     out = ''
-    
+
     while 0 < read:
         try:
             req = read_request(fd)
@@ -206,7 +206,7 @@ try:
         versionSpecificFolderName = '3.x'
 
     # Go to the version specific scripts folder for the version of Python on the machine
-    versionSpecificFolderPath = os.join(pathToCommonScriptsFolder, versionSpecificFolderName)
+    versionSpecificFolderPath = join(pathToCommonScriptsFolder, versionSpecificFolderName)
     trace(versionSpecificFolderPath)
     os.chdir(versionSpecificFolderPath)
 
