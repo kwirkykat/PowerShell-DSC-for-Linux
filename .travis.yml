@@ -42,7 +42,7 @@ script:
   -
   - # Python tests for 2.6x-2.7x
   - cd /opt/omi-*/share/dsc/Scripts/2.6x-2.7x/Scripts/Tests/
-  - sudo python ./test_nxProviders.py 2> /dev/null
+  - sudo python ./test_nxProviders.py
   -
   - # Python tests for 3.x
   - cd /opt/omi-*/share/dsc/Scripts/3.x/Scripts/Tests/

@@ -22,6 +22,8 @@ import hashlib
 import base64
 import cPickle as pickle
 from contextlib import contextmanager
+import shutil
+from os.path import dirname, realpath, join
 
 @contextmanager
 def opened_w_error(filename, mode="r"):
@@ -157,27 +159,16 @@ def deep_compare(obj1, obj2):
 
     return False
 
-sys.path.append('.')
-sys.path.append(os.path.realpath('./Scripts'))
-os.chdir('../..')
-nxUser=imp.load_source('nxUser','./Scripts/nxUser.py') 
-nxGroup=imp.load_source('nxGroup','./Scripts/nxGroup.py') 
-nxFile=imp.load_source('nxFile','./Scripts/nxFile.py') 
-nxScript=imp.load_source('nxScript','./Scripts/nxScript.py') 
-nxService=imp.load_source('nxService','./Scripts/nxService.py') 
-nxPackage=imp.load_source('nxPackage','./Scripts/nxPackage.py') 
-nxSshAuthorizedKeys=imp.load_source('nxSshAuthorizedKeys','./Scripts/nxSshAuthorizedKeys.py')
-nxEnvironment=imp.load_source('nxEnvironment','./Scripts/nxEnvironment.py')
-nxFirewall=imp.load_source('nxFirewall','./Scripts/nxFirewall.py')
-nxIPAddress=imp.load_source('nxIPAddress', './Scripts/nxIPAddress.py')
-nxComputer=imp.load_source('nxComputer', './Scripts/nxComputer.py')
-nxDNSServerAddress=imp.load_source('nxDNSServerAddress', './Scripts/nxDNSServerAddress.py')
-nxFileLine=imp.load_source('nxFileLine', './Scripts/nxFileLine.py')
-nxArchive=imp.load_source('nxArchive', './Scripts/nxArchive.py')
-nxMySqlUser=imp.load_source('nxMySqlUser', './Scripts/nxMySqlUser.py')
-nxMySqlGrant=imp.load_source('nxMySqlGrant', './Scripts/nxMySqlGrant.py')
-nxMySqlDatabase=imp.load_source('nxMySqlDatabase', './Scripts/nxMySqlDatabase.py')
-nxFileInventory=imp.load_source('nxFileInventory', './Scripts/nxFileInventory.py')
+pathToCurrentScript = realpath(__file__)
+pathToVersionSpecificTestsFolder = dirname(pathToCurrentScript)
+pathToVersionSpecificScriptsFolder = dirname(pathToVersionSpecificTestsFolder)
+
+resourcesToImport = ['nxUser', 'nxGroup', 'nxFile', 'nxScript', 'nxService', 'nxPackage', 'nxSshAuthorizedKeys', 'nxEnvironment', 'nxFirewall', 'nxIPAddress', 'nxComputer', 'nxDNSServerAddress', 'nxFileLine', 'nxArchive', 'nxMySqlUser', 'nxMySqlGrant', 'nxMySqlDatabase', 'nxFileInventory']
+
+for resourceToImport in resourcesToImport:
+    pathToResourceScript = join(pathToVersionSpecificScriptsFolder, resourceToImport + '.py')
+    print("RESOURCE PATH: " + pathToResourceScript)
+    locals()[resourceToImport] = imp.load_source(resourceToImport, pathToResourceScript)
 
 class nxUserTestCases(unittest2.TestCase):
     """
@@ -1052,14 +1043,14 @@ class nxPackageTestCases(unittest2.TestCase):
                         'CheckInventory(self.pkg, r[1]) should == False')
 
     def testInventoryMarshallCmdlineError(self):
-        os.system('cp  ./Scripts/nxPackage.py /tmp/nxPackageBroken.py')
-        os.system(r'sed -i "s/\((f).*\)[0-9]/\120/" /tmp/nxPackageBroken.py')
-        nxPackageBroken = imp.load_source('nxPackageBroken','/tmp/nxPackageBroken.py') 
-        r=nxPackageBroken.Inventory_Marshall('','','*','',False,'',0)
-        os.system('rm /tmp/nxPackageBroken.py')
+        nxPackageScriptPath = join(pathToVersionSpecificScriptsFolder, 'nxPackage.py')
+        nxPackageBrokenScriptPath = join(pathToVersionSpecificScriptsFolder, 'nxPackageBroken.py')
+        shutil.copy(nxPackageScriptPath, nxPackageBrokenScriptPath)
+        os.system(r'sed -i "s/\((f).*\)[0-9]/\120/" ' + nxPackageBrokenScriptPath)
+        nxPackageBroken = imp.load_source('nxPackageBroken', nxPackageBrokenScriptPath) 
+        result = nxPackageBroken.Inventory_Marshall('','','*','',False,'',0)
+        os.remove(nxPackageBrokenScriptPath)
         self.assertTrue(len(r[1]['__Inventory'].value) == 0,"nxPackageBroken.Inventory_Marshall('','','*','',False,'',0)  should return empty MI_INSTANCEA.")
-
-
 
 class nxFileTestCases(unittest2.TestCase):
     """
@@ -2062,14 +2053,16 @@ class nxServiceTestCases(unittest2.TestCase):
 
 
     def testInventoryMarshallCmdlineError(self):
-        os.system('cp  ./Scripts/nxService.py /tmp/nxServiceBroken.py')
-        os.system('sed -i "s/cmd =  initd_service + \' --status-all \'/cmd =  initd_service + \' --atus-all \'/" /tmp/nxServiceBroken.py')
-        os.system('sed -i "s/cmd = initd_chkconfig + \' --list \'/cmd = initd_chkconfig + \' --ist \'/" /tmp/nxServiceBroken.py')
-        os.system('sed -i "s/cmd = \'initctl list\'/cmd = \'initctl ist\'/" /tmp/nxServiceBroken.py')
-        os.system('sed -i "s/cmd = \'systemctl -a list-unit-files \'/cmd = \'systemctl -a ist-unit-files \'/" /tmp/nxServiceBroken.py')
-        nxServiceBroken = imp.load_source('nxServiceBroken','/tmp/nxServiceBroken.py') 
-        r=nxServiceBroken.Inventory_Marshall('*', self.controller, None,'')
-        os.system('rm /tmp/nxServiceBroken.py')
+        nxServiceScriptPath = join(pathToVersionSpecificScriptsFolder, 'nxService.py')
+        nxServiceBrokenScriptPath = join(pathToVersionSpecificScriptsFolder, 'nxServiceBroken.py')
+        shutil.copy(nxServiceScriptPath, nxServiceBrokenScriptPath)
+        os.system('sed -i "s/cmd =  initd_service + \' --status-all \'/cmd =  initd_service + \' --atus-all \'/" ' + nxServiceBrokenScriptPath)
+        os.system('sed -i "s/cmd = initd_chkconfig + \' --list \'/cmd = initd_chkconfig + \' --ist \'/" ' + nxServiceBrokenScriptPath)
+        os.system('sed -i "s/cmd = \'initctl list\'/cmd = \'initctl ist\'/" ' + nxServiceBrokenScriptPath)
+        os.system('sed -i "s/cmd = \'systemctl -a list-unit-files \'/cmd = \'systemctl -a ist-unit-files \'/" ' + nxServiceBrokenScriptPath)
+        nxServiceBroken = imp.load_source('nxServiceBroken', nxServiceBrokenScriptPath) 
+        result = nxServiceBroken.Inventory_Marshall('*', self.controller, None,'')
+        os.remove(nxServiceBrokenScriptPath)
         self.assertTrue(r[0] == -1,"nxServiceBroken.Inventory_Marshall('*', " + self.controller + ", None,'')  should return == -1")
 
 
