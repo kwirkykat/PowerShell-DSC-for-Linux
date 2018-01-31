@@ -34,6 +34,7 @@ nxDSCLog = imp.load_source('nxDSCLog', nxDSCLogPath)
 helperlib = imp.load_source('helperlib', helperLibPath)
 
 LG = nxDSCLog.DSCLog
+
 try:
     import hashlib
     md5const = hashlib.md5

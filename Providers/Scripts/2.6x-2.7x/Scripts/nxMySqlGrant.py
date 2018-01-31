@@ -27,8 +27,6 @@ nxDSCLog = imp.load_source('nxDSCLog', nxDSCLogPath)
 
 LG = nxDSCLog.DSCLog
 
-
-
 # [ClassVersion("1.0.0"),FriendlyName("nxMySqlGrant")] 
 # class MSFT_nxMySqlGrantResource : OMI_BaseResource
 # { 

@@ -84,13 +84,14 @@ class DSCLog(object):
         error = None
 
         try:
-            logFileHandle, error = open_file_with_error_catch(self.file_path, 'a')
+            try:
+                logFileHandle, error = open_file_with_error_catch(self.file_path, 'a')
 
-            if error:
+                if error:
+                    write_error_to_stderr("Exception opening logfile " + self.file_path + " Error: " + str(error))
+                else:
+                    logFileHandle.write(logLine)
+            except:
                 write_error_to_stderr("Exception opening logfile " + self.file_path + " Error: " + str(error))
-            else:
-                logFileHandle.write(logLine)
-        except:
-            write_error_to_stderr("Exception opening logfile " + self.file_path + " Error: " + str(error))
         finally:
             logFileHandle.close()

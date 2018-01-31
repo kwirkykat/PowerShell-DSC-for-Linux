@@ -31,6 +31,7 @@ protocol = imp.load_source('protocol', protocolLibPath)
 nxDSCLog = imp.load_source('nxDSCLog', nxDSCLogPath)
 
 LG = nxDSCLog.DSCLog
+
 try:
     import hashlib
     md5const = hashlib.md5
