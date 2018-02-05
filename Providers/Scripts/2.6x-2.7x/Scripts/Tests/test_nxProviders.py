@@ -22,6 +22,8 @@ import hashlib
 import base64
 import cPickle as pickle
 from contextlib import contextmanager
+import shutil
+from os.path import dirname, realpath, join
 
 @contextmanager
 def opened_w_error(filename, mode="r"):
@@ -42,7 +44,7 @@ try:
     import unittest2
 except:
     os.system('tar -zxf ./unittest2-0.5.1.tar.gz')
-    sys.path.append(os.path.realpath('./unittest2-0.5.1'))
+    sys.path.append(realpath('./unittest2-0.5.1'))
     import unittest2
 
 def ParseMOF(mof_file):
@@ -157,27 +159,18 @@ def deep_compare(obj1, obj2):
 
     return False
 
-sys.path.append('.')
-sys.path.append(os.path.realpath('./Scripts'))
-os.chdir('../..')
-nxUser=imp.load_source('nxUser','./Scripts/nxUser.py') 
-nxGroup=imp.load_source('nxGroup','./Scripts/nxGroup.py') 
-nxFile=imp.load_source('nxFile','./Scripts/nxFile.py') 
-nxScript=imp.load_source('nxScript','./Scripts/nxScript.py') 
-nxService=imp.load_source('nxService','./Scripts/nxService.py') 
-nxPackage=imp.load_source('nxPackage','./Scripts/nxPackage.py') 
-nxSshAuthorizedKeys=imp.load_source('nxSshAuthorizedKeys','./Scripts/nxSshAuthorizedKeys.py')
-nxEnvironment=imp.load_source('nxEnvironment','./Scripts/nxEnvironment.py')
-nxFirewall=imp.load_source('nxFirewall','./Scripts/nxFirewall.py')
-nxIPAddress=imp.load_source('nxIPAddress', './Scripts/nxIPAddress.py')
-nxComputer=imp.load_source('nxComputer', './Scripts/nxComputer.py')
-nxDNSServerAddress=imp.load_source('nxDNSServerAddress', './Scripts/nxDNSServerAddress.py')
-nxFileLine=imp.load_source('nxFileLine', './Scripts/nxFileLine.py')
-nxArchive=imp.load_source('nxArchive', './Scripts/nxArchive.py')
-nxMySqlUser=imp.load_source('nxMySqlUser', './Scripts/nxMySqlUser.py')
-nxMySqlGrant=imp.load_source('nxMySqlGrant', './Scripts/nxMySqlGrant.py')
-nxMySqlDatabase=imp.load_source('nxMySqlDatabase', './Scripts/nxMySqlDatabase.py')
-nxFileInventory=imp.load_source('nxFileInventory', './Scripts/nxFileInventory.py')
+pathToCurrentScript = realpath(__file__)
+pathToVersionSpecificTestsFolder = dirname(pathToCurrentScript)
+pathToVersionSpecificScriptsFolder = dirname(pathToVersionSpecificTestsFolder)
+
+resourcesToImport = ['nxUser', 'nxGroup', 'nxFile', 'nxScript', 'nxService', 'nxPackage', 'nxSshAuthorizedKeys', 'nxEnvironment', 'nxFirewall', 'nxIPAddress', 'nxComputer', 'nxDNSServerAddress', 'nxFileLine', 'nxArchive', 'nxMySqlUser', 'nxMySqlGrant', 'nxMySqlDatabase', 'nxFileInventory']
+
+for resourceToImport in resourcesToImport:
+    pathToResourceScript = join(pathToVersionSpecificScriptsFolder, resourceToImport + '.py')
+    print("PYTHON 2.6-2.7 RESOURCE PATH: " + pathToResourceScript)
+    locals()[resourceToImport] = imp.load_source(resourceToImport, pathToResourceScript)
+
+pathToVersionSpecificTestMofsFolder = join(pathToVersionSpecificTestsFolder, 'test_mofs')
 
 class nxUserTestCases(unittest2.TestCase):
     """
@@ -760,16 +753,18 @@ class nxPackageTestCases(unittest2.TestCase):
         self.pkg = 'nano'
         if platform.dist()[0].lower() == 'suse':
             self.pkg = 'gvim'
+        
         if os.system('which dpkg') == 0 :
             os.system('dpkg -r ' + self.pkg + ' 2> /dev/null')
             if os.path.exists('/usr/bin/dummy.sh'):
                 os.system('dpkg -r dummy 2> /dev/null')
-            self.package_path='./Scripts/Tests/dummy-1.0.deb'
+            self.package_path = join(pathToVersionSpecificTestsFolder, 'dummy-1.0.deb')
         else :
             os.system('rpm -e ' + self.pkg + ' 2> /dev/null')
             if os.path.exists('/usr/bin/dummy.sh'):
                 os.system('rpm -e dummy 2> /dev/null')
-            self.package_path='./Scripts/Tests/dummy-1.0-1.x86_64.rpm'
+            self.package_path = join(pathToVersionSpecificTestsFolder, 'dummy-1.0-1.x86_64.rpm')
+        
         time.sleep(3)
         print self.id() + '\n'
         
@@ -1052,14 +1047,14 @@ class nxPackageTestCases(unittest2.TestCase):
                         'CheckInventory(self.pkg, r[1]) should == False')
 
     def testInventoryMarshallCmdlineError(self):
-        os.system('cp  ./Scripts/nxPackage.py /tmp/nxPackageBroken.py')
-        os.system(r'sed -i "s/\((f).*\)[0-9]/\120/" /tmp/nxPackageBroken.py')
-        nxPackageBroken = imp.load_source('nxPackageBroken','/tmp/nxPackageBroken.py') 
-        r=nxPackageBroken.Inventory_Marshall('','','*','',False,'',0)
-        os.system('rm /tmp/nxPackageBroken.py')
-        self.assertTrue(len(r[1]['__Inventory'].value) == 0,"nxPackageBroken.Inventory_Marshall('','','*','',False,'',0)  should return empty MI_INSTANCEA.")
-
-
+        nxPackageScriptPath = join(pathToVersionSpecificScriptsFolder, 'nxPackage.py')
+        nxPackageBrokenScriptPath = join(pathToVersionSpecificScriptsFolder, 'nxPackageBroken.py')
+        shutil.copy(nxPackageScriptPath, nxPackageBrokenScriptPath)
+        os.system(r'sed -i "s/\((f).*\)[0-9]/\120/" ' + nxPackageBrokenScriptPath)
+        nxPackageBroken = imp.load_source('nxPackageBroken', nxPackageBrokenScriptPath) 
+        result = nxPackageBroken.Inventory_Marshall('', '', '*', '', False, '', 0)
+        os.remove(nxPackageBrokenScriptPath)
+        self.assertTrue(len(result[1]['__Inventory'].value) == 0, "nxPackageBroken.Inventory_Marshall('','','*','',False,'',0)  should return empty MI_INSTANCEA.")
 
 class nxFileTestCases(unittest2.TestCase):
     """
@@ -2062,16 +2057,17 @@ class nxServiceTestCases(unittest2.TestCase):
 
 
     def testInventoryMarshallCmdlineError(self):
-        os.system('cp  ./Scripts/nxService.py /tmp/nxServiceBroken.py')
-        os.system('sed -i "s/cmd =  initd_service + \' --status-all \'/cmd =  initd_service + \' --atus-all \'/" /tmp/nxServiceBroken.py')
-        os.system('sed -i "s/cmd = initd_chkconfig + \' --list \'/cmd = initd_chkconfig + \' --ist \'/" /tmp/nxServiceBroken.py')
-        os.system('sed -i "s/cmd = \'initctl list\'/cmd = \'initctl ist\'/" /tmp/nxServiceBroken.py')
-        os.system('sed -i "s/cmd = \'systemctl -a list-unit-files \'/cmd = \'systemctl -a ist-unit-files \'/" /tmp/nxServiceBroken.py')
-        nxServiceBroken = imp.load_source('nxServiceBroken','/tmp/nxServiceBroken.py') 
-        r=nxServiceBroken.Inventory_Marshall('*', self.controller, None,'')
-        os.system('rm /tmp/nxServiceBroken.py')
-        self.assertTrue(r[0] == -1,"nxServiceBroken.Inventory_Marshall('*', " + self.controller + ", None,'')  should return == -1")
-
+        nxServiceScriptPath = join(pathToVersionSpecificScriptsFolder, 'nxService.py')
+        nxServiceBrokenScriptPath = join(pathToVersionSpecificScriptsFolder, 'nxServiceBroken.py')
+        shutil.copy(nxServiceScriptPath, nxServiceBrokenScriptPath)
+        os.system('sed -i "s/cmd =  initd_service + \' --status-all \'/cmd =  initd_service + \' --atus-all \'/" ' + nxServiceBrokenScriptPath)
+        os.system('sed -i "s/cmd = initd_chkconfig + \' --list \'/cmd = initd_chkconfig + \' --ist \'/" ' + nxServiceBrokenScriptPath)
+        os.system('sed -i "s/cmd = \'initctl list\'/cmd = \'initctl ist\'/" ' + nxServiceBrokenScriptPath)
+        os.system('sed -i "s/cmd = \'systemctl -a list-unit-files \'/cmd = \'systemctl -a ist-unit-files \'/" ' + nxServiceBrokenScriptPath)
+        nxServiceBroken = imp.load_source('nxServiceBroken', nxServiceBrokenScriptPath) 
+        result = nxServiceBroken.Inventory_Marshall('*', self.controller, None, '')
+        os.remove(nxServiceBrokenScriptPath)
+        self.assertTrue(result[0] == -1, "nxServiceBroken.Inventory_Marshall('*', " + self.controller + ", None,'')  should return == -1")
 
     def testInventoryMarshallControllerWildcard(self):
         r=nxService.Inventory_Marshall('*', '*', None,'')
@@ -2666,49 +2662,56 @@ class nxIPAddressTestCases(unittest2.TestCase):
         return retval,d
     
     def testSetIPAddressV4Dynamic(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxIPAddress_eth1_V4_dynamic.mof')
-        self.assertTrue(nxIPAddress.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxIPAddress_eth1_V4_dynamic.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxIPAddress.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]') 
 
     def testGetIPAddressV4Dynamic(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxIPAddress_eth1_V4_dynamic.mof')
-        self.assertTrue(nxIPAddress.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxIPAddress.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return ==['+repr(d)+']')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxIPAddress_eth1_V4_dynamic.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxIPAddress.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxIPAddress.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return ==[' + repr(parseMofOutput) + ']')
 
     def testSetIPAddressV4Static(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxIPAddress_eth1_V4_static.mof')
-        self.assertTrue(nxIPAddress.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxIPAddress_eth1_V4_static.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxIPAddress.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]') 
 
     def testGetIPAddressV4Static(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxIPAddress_eth1_V4_static.mof')
-        self.assertTrue(nxIPAddress.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxIPAddress.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return ==['+repr(d)+']')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxIPAddress_eth1_V4_static.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxIPAddress.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxIPAddress.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return ==[' + repr(parseMofOutput) + ']')
 
     def testSetIPAddressV6Dynamic(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxIPAddress_eth1_V6_dynamic.mof')
-        self.assertTrue(nxIPAddress.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxIPAddress_eth1_V6_dynamic.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxIPAddress.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]') 
 
     def testGetIPAddressV6Dynamic(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxIPAddress_eth1_V6_dynamic.mof')
-        self.assertTrue(nxIPAddress.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxIPAddress.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return ==['+repr(d)+']')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxIPAddress_eth1_V6_dynamic.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxIPAddress.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxIPAddress.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return ==[' + repr(parseMofOutput) + ']')
 
     def testSetIPAddressV6Static(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxIPAddress_eth1_V6_static.mof')
-        self.assertTrue(nxIPAddress.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxIPAddress_eth1_V6_static.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxIPAddress.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]') 
 
     def testGetIPAddressV6Static(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxIPAddress_eth1_V6_static.mof')
-        self.assertTrue(nxIPAddress.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxIPAddress.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return ==['+repr(d)+']')
-
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxIPAddress_eth1_V6_static.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxIPAddress.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxIPAddress.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return ==[' + repr(parseMofOutput) + ']')
 
 class nxComputerTestCases(unittest2.TestCase):
     """
@@ -2757,17 +2760,18 @@ class nxComputerTestCases(unittest2.TestCase):
         return retval,d
     
     def testSetComputerNameTimeZone(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxComputer.mof')
-        self.assertTrue(nxComputer.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxComputer.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxComputer.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]') 
 
     def testGetComputerNameTimeZone(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxComputer.mof')
-        self.assertTrue(nxComputer.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        d['AlternateTimeZoneName']=''
-        self.assertTrue(check_values(nxComputer.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return ==['+repr(d)+']')
-
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxComputer.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxComputer.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        parseMofOutput['AlternateTimeZoneName'] = ''
+        self.assertTrue(check_values(nxComputer.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return ==[' + repr(parseMofOutput) + ']')
 
 class nxDNSServerAddressTestCases(unittest2.TestCase):
     """
@@ -2806,26 +2810,28 @@ class nxDNSServerAddressTestCases(unittest2.TestCase):
         return retval,d
     
     def testSetDNSServerAddressPresent(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxDNSServerAddress_add.mof')
-        self.assertTrue(nxDNSServerAddress.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxDNSServerAddress_add.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxDNSServerAddress.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
 
     def testGetDNSServerAddressPresent(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxDNSServerAddress_add.mof')
-        self.assertTrue(nxDNSServerAddress.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxDNSServerAddress_add.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxDNSServerAddress.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
 
-        self.assertTrue(check_values(nxDNSServerAddress.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return [0,'+ repr(d) + ']')
+        self.assertTrue(check_values(nxDNSServerAddress.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return [0,'+ repr(parseMofOutput) + ']')
 
     def testGetDNSServerAddressAbsent(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxDNSServerAddress_add.mof')
-        self.assertTrue(nxDNSServerAddress.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        d['Ensure']='Absent'
-        self.assertTrue(nxDNSServerAddress.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxDNSServerAddress.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return [0,'+ repr(d) + ']')
-
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxDNSServerAddress_add.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxDNSServerAddress.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        parseMofOutput['Ensure']='Absent'
+        self.assertTrue(nxDNSServerAddress.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxDNSServerAddress.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return [0,' + repr(parseMofOutput) + ']')
 
 class nxFileLineTestCases(unittest2.TestCase):
     """
@@ -2862,16 +2868,17 @@ class nxFileLineTestCases(unittest2.TestCase):
         return retval,d
     
     def testSetFileLinePresent(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxFileLine_add.mof')
-        self.assertTrue(nxFileLine.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxFileLine_add.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxFileLine.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
 
     def testGetFileLine(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxFileLine_add.mof')
-        self.assertTrue(nxFileLine.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxFileLine.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return [0,'+ repr(d) + ']')
-
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxFileLine_add.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxFileLine.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxFileLine.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return [0,' + repr(parseMofOutput) + ']')
 
 class nxArchiveTestCases(unittest2.TestCase):
     """
@@ -2881,8 +2888,17 @@ class nxArchiveTestCases(unittest2.TestCase):
         """
         Setup test resources
         """
-        if not os.path.exists('/tmp/src.tar.gz') or not os.path.exists('/tmp/src.zip'):
-            os.system('cp ./Scripts/Tests/test_mofs/src* /tmp/') 
+        testTarPath = '/tmp/src.tar.gz'
+        testZipPath = '/tmp/src.zip'
+
+        if not os.path.exists(testTarPath):
+            testTarSourcePath = join(pathToVersionSpecificTestMofsFolder, 'src.tar.gz')
+            shutil.copy(testTarSourcePath, testTarPath)
+        
+        if not os.path.exists(testZipPath):
+            testZipSourcePath = join(pathToVersionSpecificTestMofsFolder, 'src.zip')
+            shutil.copy(testZipSourcePath, testZipPath)
+
         print self.id() + '\n'
         
     def tearDown(self):
@@ -2917,16 +2933,16 @@ class nxArchiveTestCases(unittest2.TestCase):
         return retval,d
 
     def testSetTarArchivePresent(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxArchive_tar_ctime_test.mof')
-        self.assertTrue(nxArchive.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxArchive_tar_ctime_test.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxArchive.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
 
     def testSetZipArchivePresent(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxArchive_zip_ctime_test.mof')
-        self.assertTrue(nxArchive.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxArchive_zip_ctime_test.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxArchive.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
 
-
-@unittest2.skipUnless(os.system('ps -ef | grep -v grep | grep -q mysqld') ==
-                      0,'Skipping nxMySqlUserTestCases.   mysqld is not running.')
+@unittest2.skipUnless(os.system('ps -ef | grep -v grep | grep -q mysqld') == 0, 'Skipping nxMySqlUserTestCases because mysqld is not running.')
 class nxMySqlUserTestCases(unittest2.TestCase):
     """
     Test cases for nxMySqlUser.py
@@ -2974,41 +2990,45 @@ class nxMySqlUserTestCases(unittest2.TestCase):
         return retval,d
     
     def testSetMySqlUser_add(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlUser_add.mof')
-        self.assertTrue(nxMySqlUser.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlUser_add.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlUser.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]') 
 
     def testGetMySqlUser_add(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlUser_add.mof')
-        self.assertTrue(nxMySqlUser.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxMySqlUser.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return ==['+repr(d)+']')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlUser_add.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlUser.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxMySqlUser.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return ==[' + repr(parseMofOutput) + ']')
 
     def testSetMySqlUser_del(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlUser_del.mof')
-        self.assertTrue(nxMySqlUser.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlUser_del.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlUser.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]') 
 
     def testGetMySqlUser_del(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlUser_del.mof')
-        self.assertTrue(nxMySqlUser.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxMySqlUser.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return ==['+repr(d)+']')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlUser_del.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlUser.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxMySqlUser.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return ==[' + repr(parseMofOutput) + ']')
 
     def testSetMySqlUser_upd(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlUser_upd.mof')
-        self.assertTrue(nxMySqlUser.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlUser_upd.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlUser.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]') 
 
     def testGetMySqlUser_upd(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlUser_upd.mof')
-        self.assertTrue(nxMySqlUser.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxMySqlUser.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return ==['+repr(d)+']')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlUser_upd.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlUser.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxMySqlUser.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return ==[' + repr(parseMofOutput) + ']')
 
-
-@unittest2.skipUnless(os.system('ps -ef | grep -v grep | grep -q mysqld') ==
-                      0,'Skipping nxMySqlDatabaseTestCases.   mysqld is not running.')
+@unittest2.skipUnless(os.system('ps -ef | grep -v grep | grep -q mysqld') == 0, 'Skipping nxMySqlDatabaseTestCases because mysqld is not running.')
 class nxMySqlDatabaseTestCases(unittest2.TestCase):
     """
     Test cases for nxMySqlDatabase.py
@@ -3052,30 +3072,32 @@ class nxMySqlDatabaseTestCases(unittest2.TestCase):
         return retval,d
     
     def testSetMySqlDatabase_add(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlDatabase_add.mof')
-        self.assertTrue(nxMySqlDatabase.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlDatabase_add.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlDatabase.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]') 
 
     def testGetMySqlDatabase_add(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlDatabase_add.mof')
-        self.assertTrue(nxMySqlDatabase.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxMySqlDatabase.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return ==['+repr(d)+']')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlDatabase_add.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlDatabase.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxMySqlDatabase.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return ==[' + repr(parseMofOutput) + ']')
 
     def testSetMySqlDatabase_del(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlDatabase_del.mof')
-        self.assertTrue(nxMySqlDatabase.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlDatabase_del.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlDatabase.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]') 
 
     def testGetMySqlDatabase_del(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlDatabase_del.mof')
-        self.assertTrue(nxMySqlDatabase.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxMySqlDatabase.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return ==['+repr(d)+']')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlDatabase_del.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlDatabase.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxMySqlDatabase.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return ==[' + repr(parseMofOutput) + ']')
 
-
-@unittest2.skipUnless(os.system('ps -ef | grep -v grep | grep -q mysqld') ==
-                      0,'Skipping nxMySqlGrantTestCases.   mysqld is not running.')
+@unittest2.skipUnless(os.system('ps -ef | grep -v grep | grep -q mysqld') == 0, 'Skipping nxMySqlGrantTestCases because mysqld is not running.')
 class nxMySqlGrantTestCases(unittest2.TestCase):
     """
     Test cases for nxMySqlGrant.py
@@ -3095,10 +3117,14 @@ class nxMySqlGrantTestCases(unittest2.TestCase):
         """
         Setup test resources
         """
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlDatabase_add.mof')
-        nxMySqlDatabase.Set_Marshall(**d)
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlUser_add.mof')
-        nxMySqlUser.Set_Marshall(**d)
+        nxMySqlDatabaseTestMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlDatabase_add.mof')
+        nxMySqlDatabaseParseMofOutput = ParseMOF(nxMySqlDatabaseTestMofPath)
+        nxMySqlDatabase.Set_Marshall(**nxMySqlDatabaseParseMofOutput)
+
+        nxMySqlUserTestMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlUser_add.mof')
+        nxMySqlUserParseMofOutput = ParseMOF(nxMySqlUserTestMofPath)
+        nxMySqlUser.Set_Marshall(**nxMySqlUserParseMofOutput)
+
         self.revoke()
         
     def tearDown(self):
@@ -3106,10 +3132,14 @@ class nxMySqlGrantTestCases(unittest2.TestCase):
         Remove test resources.
         """
         self.revoke()
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlDatabase_del.mof')
-        nxMySqlDatabase.Set_Marshall(**d)
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlUser_del.mof')
-        nxMySqlUser.Set_Marshall(**d)
+
+        nxMySqlDatabaseTestMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlDatabase_del.mof')
+        nxMySqlDatabaseParseMofOutput = ParseMOF(nxMySqlDatabaseTestMofPath)
+        nxMySqlDatabase.Set_Marshall(**nxMySqlDatabaseParseMofOutput)
+
+        nxMySqlUserTestMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlUser_del.mof')
+        nxMySqlUserParseMofOutput = ParseMOF(nxMySqlUserTestMofPath)
+        nxMySqlUser.Set_Marshall(**nxMySqlUserParseMofOutput)
         
     def make_MI(self,retval,UserName, DatabaseName, ConnectionCredential, PermissionType, Ensure):
         d=dict()
@@ -3137,28 +3167,30 @@ class nxMySqlGrantTestCases(unittest2.TestCase):
         return retval,d
     
     def testSetMySqlGrant_add(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlGrant_add.mof')
-        self.assertTrue(nxMySqlGrant.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlGrant_add.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlGrant.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]') 
 
     def testGetMySqlGrant_add(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlGrant_add.mof')
-        self.assertTrue(nxMySqlGrant.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxMySqlGrant.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return ==['+repr(d)+']')
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlGrant_add.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlGrant.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxMySqlGrant.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) +' should return ==[' + repr(parseMofOutput) + ']')
 
     def testSetMySqlGrant_del(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlGrant_del.mof')
-        self.assertTrue(nxMySqlGrant.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlGrant_del.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlGrant.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]') 
 
     def testGetMySqlGrant_del(self):
-        d=ParseMOF('./Scripts/Tests/test_mofs/nxMySqlGrant_del.mof')
-        self.assertTrue(nxMySqlGrant.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]')
-        self.assertTrue(check_values(nxMySqlGrant.Get_Marshall(**d), \
-        self.make_MI(0,**d))  ==  True, \
-        'Get('+repr(d)+' should return ==['+repr(d)+']')
-
-    
+        testMofPath = join(pathToVersionSpecificTestMofsFolder, 'nxMySqlGrant_del.mof')
+        parseMofOutput = ParseMOF(testMofPath)
+        self.assertTrue(nxMySqlGrant.Set_Marshall(**parseMofOutput) == [0], 'Set(' + repr(parseMofOutput) + ') should return == [0]')
+        self.assertTrue(check_values(nxMySqlGrant.Get_Marshall(**parseMofOutput), \
+        self.make_MI(0, **parseMofOutput)) == True, \
+        'Get(' + repr(parseMofOutput) + ' should return ==[' + repr(parseMofOutput) + ']')
 
 class nxFileInventoryTestCases(unittest2.TestCase):
     """
@@ -3268,21 +3300,25 @@ class nxFileInventoryTestCases(unittest2.TestCase):
         pass
 
     def SerializeInventoryObject(self, fname, ob):
-        # Persist the results of correct results for future tests.
-        # The pickled results are stored in test_mofs.
-        # You should re-create these files if Inventory_Marshall
-        # or the the tests have changed.
-        l = []
-        for d in ob[1]['__Inventory'].value:
-            l.append(d['DestinationPath'].value)
-        l.sort()
-        with open('./Scripts/Tests/test_mofs/' + fname + '.pkl', 'wb') as F:
-            pickle.dump(l, F, -1)
+        """Persists the correct results for future tests.
+
+        The pickled results are stored in test_mofs.
+        This file should be re-created if Inventory_Marshall or the the tests change.
+        """
+        listOfCorrectResults = []
+        for inventoryResult in ob[1]['__Inventory'].value:
+            listOfCorrectResults.append(inventoryResult['DestinationPath'].value)
+        listOfCorrectResults.sort()
+
+        pickleFilePath = join(pathToVersionSpecificTestMofsFolder, fname + '.pkl')
+        with open(pickleFilePath, 'wb') as pickleFileHandle:
+            pickle.dump(listOfCorrectResults, pickleFileHandle, -1)
 
     def DeserializeInventoryObject(self, fname):
-        with open('./Scripts/Tests/test_mofs/' + fname + '.pkl', 'rb') as F:
-            r = pickle.load(F)
-        return r
+        pickleFilePath = join(pathToVersionSpecificTestMofsFolder, fname + '.pkl')
+        with open(pickleFilePath, 'rb') as pickleFileHandle:
+            pickleFileContents = pickle.load(pickleFileHandle)
+        return pickleFileContents
         
     def MakeList(self,ob):
         l = []

@@ -1235,7 +1235,7 @@ MI_Result Exec_WMIv2Provider(_In_ ProviderCallbackContext *provContext,
     MI_OperationCallbacks callbacks = MI_OPERATIONCALLBACKS_NULL;
     MI_Real64 duration;
     MI_OperationOptions sessionOptions;
-    const MI_Char * instanceNamespace;    
+    const MI_Char * instanceNamespace;
    
     ptrdiff_t start,finish;
 
@@ -1389,10 +1389,11 @@ MI_Result Exec_WMIv2Provider(_In_ ProviderCallbackContext *provContext,
             //INCHTODO: Say setcustomoptionfailed
             return GetCimMIError(r, extendedError,ID_CAINFRA_GET_ADDELEM_FAILED);
         }
+
         /* Perform Test*/
         //Start timer for test
         start=CPU_GetTimeStamp();
-        DSC_EventWriteMessageInvokingSession(provNamespace,instance->classDecl->name,OMI_BaseResource_TestMethodName);
+        DSC_EventWriteMessageInvokingSession(provNamespace, instance->classDecl->name, OMI_BaseResource_TestMethodName);
         SetMessageInContext(ID_OUTPUT_OPERATION_START,ID_OUTPUT_ITEM_TEST,provContext->lcmProviderContext);
         LogCAMessage(provContext->lcmProviderContext, ID_OUTPUT_EMPTYSTRING, provContext->resourceId);
 
@@ -1489,7 +1490,7 @@ MI_Result Exec_WMIv2Provider(_In_ ProviderCallbackContext *provContext,
         RecursiveLock_Release(&g_cs_CurrentWmiv2Operation);
 
         r = GetSetMethodResult(&operation, &returnValue, provContext->resourceId, extendedError); 
-        MI_Instance_Delete(params);         
+        MI_Instance_Delete(params);
         
         RecursiveLock_Acquire(&g_cs_CurrentWmiv2Operation);
         g_CurrentWmiv2Operation = NULL;
@@ -1901,11 +1902,13 @@ const MI_Char * GetResourceId( _In_ MI_Instance *inst)
 {
     MI_Result r = MI_RESULT_OK;
     MI_Value value;
+
     r = MI_Instance_GetElement(inst, OMI_BaseResource_ResourceId, &value, NULL, NULL, NULL);
     if( r != MI_RESULT_OK)
     {
         return NULL;
     }
+
     return (const MI_Char*)value.string;
 }
 

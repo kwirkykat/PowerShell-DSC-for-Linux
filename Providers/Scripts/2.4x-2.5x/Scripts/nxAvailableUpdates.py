@@ -13,11 +13,22 @@ import fnmatch
 import time
 import os
 
-protocol = imp.load_source('protocol', '../protocol.py')
-nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
-helperlib = imp.load_source('helperlib', '../helperlib.py')
-LG = nxDSCLog.DSCLog
+from os.path import dirname, realpath, join
 
+pathToCurrentScript = realpath(__file__)
+pathToVersionSpecificScriptsFolder = dirname(pathToCurrentScript)
+pathToVersionSpecificFolder = dirname(pathToVersionSpecificScriptsFolder)
+pathToCommonScriptsFolder = dirname(pathToVersionSpecificFolder)
+
+protocolLibPath = join(pathToCommonScriptsFolder, 'protocol.py')
+nxDSCLogPath = join(pathToCommonScriptsFolder, 'nxDSCLog.py')
+helperLibPath = join(pathToCommonScriptsFolder, 'helperlib.py')
+
+protocol = imp.load_source('protocol', protocolLibPath)
+nxDSCLog = imp.load_source('nxDSCLog', nxDSCLogPath)
+helperlib = imp.load_source('helperlib', helperLibPath)
+
+LG = nxDSCLog.DSCLog
 
 # [ClassVersion("1.0.0"),FriendlyName("nxAvailableUpdates"),SupportsInventory()]
 # class MSFT_nxAvailableUpdatesResource : OMI_BaseResource

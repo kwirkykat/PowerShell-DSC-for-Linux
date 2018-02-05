@@ -12,7 +12,16 @@ import re
 import platform
 import imp
 import socket
-protocol=imp.load_source('protocol','../protocol.py')
+
+from os.path import dirname, realpath, join
+
+pathToCurrentScript = realpath(__file__)
+pathToVersionSpecificScriptsFolder = dirname(pathToCurrentScript)
+pathToVersionSpecificFolder = dirname(pathToVersionSpecificScriptsFolder)
+pathToCommonScriptsFolder = dirname(pathToVersionSpecificFolder)
+
+protocolLibPath = join(pathToCommonScriptsFolder, 'protocol.py')
+protocol = imp.load_source('protocol', protocolLibPath)
 
 """
 MOF:

@@ -7,10 +7,23 @@ import os
 import sys
 import imp
 import tarfile
-zipfile = imp.load_source('zipfile', '../zipfile2.6.py')
-protocol = imp.load_source('protocol', '../protocol.py')
-nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+from os.path import dirname, realpath, join
+
+pathToCurrentScript = realpath(__file__)
+pathToVersionSpecificScriptsFolder = dirname(pathToCurrentScript)
+pathToVersionSpecificFolder = dirname(pathToVersionSpecificScriptsFolder)
+pathToCommonScriptsFolder = dirname(pathToVersionSpecificFolder)
+
+protocolLibPath = join(pathToCommonScriptsFolder, 'protocol.py')
+nxDSCLogPath = join(pathToCommonScriptsFolder, 'nxDSCLog.py')
+zipfileLibPath = join(pathToCommonScriptsFolder, 'zipfile2.6.py')
+
+protocol = imp.load_source('protocol', protocolLibPath)
+nxDSCLog = imp.load_source('nxDSCLog', nxDSCLogPath)
+zipfile = imp.load_source('zipfile', zipfileLibPath)
+
 LG = nxDSCLog.DSCLog
+
 try:
     import hashlib
     md5const = hashlib.md5

@@ -29,27 +29,53 @@ function ImportLinuxTestConfigurtaion
 }
 
 
-#
-# Create a connection to the OMI server: 
-#
+<#
+    .SYNOPSIS
+        Creates a CIM session to the remote machine with the specified name with the specified credential.
 
-function CreateCimSession
+    .PARAMETER RemoteMachineName
+        The name or IP address of the remote machine to which to create a CIM session.
+
+    .PARAMETER RemoteMachineCredential
+        The credential to use to access the remote machine.
+
+    .PARAMETER RemoteMachinePort
+        The port to connect to on the remote machine.
+        The default port is 5986.
+#>
+function New-CimSessionWithDefaultOptions
 {
+    [CmdletBinding()]
     param
     (
-        [Parameter(Mandatory=$true)]
-        [PSCredential]  [System.Management.Automation.Credential()] $credential,
-
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string] $server,
+        [String]
+        $RemoteMachineName,
 
+        [Parameter(Mandatory = $true)]
+        [PSCredential]
+        [System.Management.Automation.Credential()]
+        $RemoteMachineCredential,
+
+        [Parameter()]
         [ValidateNotNull()]
-        [Uint32] $port = 5986
+        [Uint32]
+        $RemoteMachinePort = 5986
     )
 
     $sessionOptions = New-CimSessionOption -SkipCACheck -SkipCNCheck -SkipRevocationCheck -UseSsl
-    $session = New-CimSession -Credential $credential -ComputerName $server -Port $port -Authentication Basic -SessionOption $sessionOptions -OperationTimeoutSec:30
+
+    $newCimSessionParameters = @{
+        ComputerName = $RemoteMachineName
+        Credential = $RemoteMachineCredential
+        Port = $RemoteMachinePort
+        Authentication = 'Basic'
+        SessionOption = $sessionOptions
+        OperationTimeoutSec = 30
+    }
+    $session = New-CimSession @newCimSessionParameters
+
     return $session
 }
 
@@ -943,7 +969,7 @@ function Install-LinuxResource
 # test configuration loading  functions
 Export-ModuleMember -function Get-TestConfiguration
 # CIM session functions
-Export-ModuleMember -function CreateCimSession, Connect-Dsc
+Export-ModuleMember -function New-CimSessionWithDefaultOptions, Connect-Dsc
 # Configuration script functions
 Export-ModuleMember -function New-PartialConfigPullScript, Update-MetaConfigurationSetting
 # publishing (copying) functions.

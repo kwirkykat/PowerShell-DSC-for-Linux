@@ -17,24 +17,27 @@ import time
 import pwd
 import traceback
 
-protocol = imp.load_source('protocol', '../protocol.py')
-nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
-try:
-    serializerfactory = imp.load_source('serializerfactory',
-                                        '../../modules/nxOMSAutomationWorker/DSCResources/MSFT_nxOMSAutomationWorkerResource/automationworker/worker/serializerfactory.py')
-except:
-    # this is the path when running tests
-    serializerfactory = imp.load_source('serializerfactory',
-                                        '../../nxOMSAutomationWorker/automationworker/worker/serializerfactory.py')
+from os.path import dirname, realpath, join
 
-try:
-    linuxutil = imp.load_source('linuxutil',
-                                '../../modules/nxOMSAutomationWorker/DSCResources/MSFT_nxOMSAutomationWorkerResource/automationworker/worker/linuxutil.py')
-except:
-    linuxutil = imp.load_source('linuxutil',
-                                '../../nxOMSAutomationWorker/automationworker/worker/linuxutil.py')
+pathToCurrentScript = realpath(__file__)
+pathToVersionSpecificScriptsFolder = dirname(pathToCurrentScript)
+pathToVersionSpecificFolder = dirname(pathToVersionSpecificScriptsFolder)
+pathToCommonScriptsFolder = dirname(pathToVersionSpecificFolder)
+
+protocolLibPath = join(pathToCommonScriptsFolder, 'protocol.py')
+nxDSCLogPath = join(pathToCommonScriptsFolder, 'nxDSCLog.py')
+
+protocol = imp.load_source('protocol', protocolLibPath)
+nxDSCLog = imp.load_source('nxDSCLog', nxDSCLogPath)
+
 LG = nxDSCLog.DSCLog
 
+dscShareFolder = dirname(pathToCommonScriptsFolder)
+commonModulesFolder = join(dscShareFolder, 'modules')
+nxOMSAutomationWorkerModuleScriptSubPath = 'nxOMSAutomationWorker/DSCResources/MSFT_nxOMSAutomationWorkerResource/automationworker/worker'
+
+releaseNxOMSAutomationWorkerModuleScriptPath = join(commonModulesFolder, nxOMSAutomationWorkerModuleScriptSubPath)
+testNxOMSAutomationWorkerModuleScriptPath = join(dscShareFolder, nxOMSAutomationWorkerModuleScriptSubPath)
 
 def Set_Marshall(ResourceSettings):
     try:
@@ -326,6 +329,18 @@ def get_diy_account_id():
     except:
         return None
 
+def import_linuxutil_lib():
+    """
+    Imports the linuxutil library from the nxOMSAutomationWorker module.
+    This function will not import the libary if it has already been imported.
+    """
+    try:
+        linuxutilLibPath = join(releaseNxOMSAutomationWorkerModuleScriptPath, 'linuxutil.py')
+        linuxutil = imp.load_source('linuxutil', linuxutilLibPath)
+    except:
+        # This is the path when running tests
+        linuxutilLibPath = join(testNxOMSAutomationWorkerModuleScriptPath, 'linuxutil.py')
+        linuxutil = imp.load_source('linuxutil', linuxutilLibPath)
 
 def get_optional_metadata():
     unknown = "Unknown"
@@ -368,6 +383,7 @@ def is_certificate_valid(worker_conf_path, certificate_path):
         worker_conf.read(worker_conf_path)
         worker_certificate_thumbprint = worker_conf.get(SECTION_OMS_METADATA, OPTION_JRDS_CERT_THUMBPRINT)
 
+        import_linuxutil_lib()
         issuer, subject, omsagent_certificate_thumbprint = linuxutil.get_cert_info(certificate_path)
 
         if worker_certificate_thumbprint == omsagent_certificate_thumbprint:
@@ -389,6 +405,18 @@ class Settings:
         self.auto_register_enabled = updates_enabled
         self.diy_enabled = diy_enabled
 
+def import_serializerfactory_lib():
+    """
+    Imports the serializer factory library from the nxOMSAutomationWork module.
+    This function will not import the library if it has already been imported.
+    """
+    try:
+        serializerFactoryLibPath = join(releaseNxOMSAutomationWorkerModuleScriptPath, 'serializerfactory.py')
+        serializerfactory = imp.load_source('serializerfactory', serializerFactoryLibPath)
+    except:
+        # This is the path when running tests
+        serializerFactoryLibPath = join(testNxOMSAutomationWorkerModuleScriptPath, 'serializerfactory.py')
+        serializerfactory = imp.load_source('serializerfactory', serializerFactoryLibPath)
 
 def read_settings_from_mof_json(json_serialized_string):
     """
@@ -397,6 +425,7 @@ def read_settings_from_mof_json(json_serialized_string):
     :return: Settings object
     """
     try:
+        import_serializerfactory_lib()
         json_serializer = serializerfactory.get_serializer(sys.version_info)
         settings = json_serializer.loads(json_serialized_string)
         workspace_id = settings[0]["WorkspaceId"].encode("ascii", "ignore")

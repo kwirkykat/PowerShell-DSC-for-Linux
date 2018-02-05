@@ -949,7 +949,7 @@ MI_Result FilterForConfigurationResource(_Inout_ MI_InstanceA *inputInstanceArra
     MI_Result r = MI_RESULT_OK;
     MI_Instance **tempOutput = NULL;
     MI_Boolean bDocumentInstance = MI_FALSE;
-
+ 
     if (extendedError == NULL)
     {
         return MI_RESULT_INVALID_PARAMETER;

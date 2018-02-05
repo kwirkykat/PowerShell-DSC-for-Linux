@@ -119,7 +119,7 @@ OMI_BIN_PATH:=$(CONFIG_BINDIR)
 OMI_LIB_PATH:=$(CONFIG_LIBDIR)
 OMI_CONFIG_PATH:=$(CONFIG_SYSCONFDIR)/dsc/configuration
 OMI_REG_PATH:=$(BIN_PATH)/omi
-OMI_REG:=$(OMI_BIN_PATH)/omireg -n root/Microsoft/DesiredStateConfiguration \
+OMI_REG:=$(OMI_BIN_PATH)/omireg -n $(DSC_NAMESPACE) \
 	-o @requestor@
 SCHEMA:=Resource.schema.mof
 REGISTER:=Resource.registration.mof
@@ -130,8 +130,7 @@ define REGISTER-PROVIDER
 	$(MKDIR) $(OMI_CONFIG_PATH)/{registration,schema}/MSFT_$1Resource; \
 	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1$(SCHEMA) \
 	    $(OMI_CONFIG_PATH)/schema/MSFT_$1Resource/MSFT_$1$(SCHEMA); \
-	$(COPY) $(PROVIDER_PATH)/$1/MSFT_$1$(REGISTER) \
-	    $(OMI_CONFIG_PATH)/registration/MSFT_$1Resource/MSFT_$1$(REGISTER); \
+	$(SED) -e 's@'"<DSC_NAMESPACE>"'@'"$(DSC_NAMESPACE)"'@g' $(PROVIDER_PATH)/$1/MSFT_$1$(REGISTER) > $(OMI_CONFIG_PATH)/registration/MSFT_$1Resource/MSFT_$1$(REGISTER); \
 	$(OMI_REG) $(BIN_PATH)/libMSFT_$1Resource.so;
 endef
 
