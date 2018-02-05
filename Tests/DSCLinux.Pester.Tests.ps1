@@ -11,6 +11,8 @@ Describe 'DSC Linux Sanity Tests' -Tags @('Feature') {
         $dscLinuxTestHelperPath = Join-Path -Path $PSScriptRoot -ChildPath 'Dsclinux.Tests.Helper.psm1'
         Import-Module -Name $dscLinuxTestHelperPath -DisableNameChecking -Force
 
+        $dscNamespace = 'root/testing'
+
         # Install Modules needed for compliation on Windows machine 
         $modulesNeeded = @('nx')
         $modulesToInstall = @()
@@ -40,7 +42,7 @@ Describe 'DSC Linux Sanity Tests' -Tags @('Feature') {
 
         $secureRootPassword = ConvertTo-SecureString -String $rootPassword -AsPlainText -Force
         $rootCredential = New-Object -TypeName 'System.Management.Automation.PSCredential' -ArgumentList @($rootUser, $secureRootPassword)
-        $script:session = CreateCimSession -Credential $rootCredential -Server $linuxClientName
+        $script:session = New-CimSessionWithDefaultOptions -RemoteMachineName $linuxClientName -RemoteMachineCredential $rootCredential
 
         # Set up file path script variables
         $configurationFolderPath = Join-Path -Path $PSScriptRoot -ChildPath 'Configurations'
@@ -53,16 +55,27 @@ Describe 'DSC Linux Sanity Tests' -Tags @('Feature') {
     }
 
 	It 'Verify we can set and get the metaconfiguration' {        
-        $metaconfigurationOutputPath = Join-Path -Path $TestDrive -ChildPath 'MetaConfigPush'
+        $metaconfigurationOutputPath = Join-Path -Path 'K:\Blah\Here' -ChildPath 'MetaConfigPush.mof'
         $lcmSettings = @{
             RefreshMode = 'PUSH'
             ConfigurationModeFrequencyMins = 60
         }
 
         $null = & $script:testMetaconfigurationFilePath -TargetClient $script:linuxClientName -Output $metaconfigurationOutputPath @lcmSettings
-        { Set-DscLocalConfigurationManager -Path $metaconfigurationOutputPath -CimSession $script:session } | Should Not Throw
+        $metaConfigurationOtuputFilePaths = Get-ChildItem -Path $metaconfigurationOutputPath -File -Filter '*.mof'
+        $metaConfigurationMofFilePath = $metaConfigurationOtuputFilePaths[0].FullName
+        $metaConfigMofFileContent = Get-Content -Path $metaConfigurationMofFilePath -Raw
+
+        $metaMofTokens = [System.Text.Encoding]::Unicode.GetBytes($metaConfigMofFileContent)
+
+        $sendMetaConfigApplyArgument = @{ ConfigurationData = $metaMofTokens }
+
+        { Invoke-CimMethod -ClassName 'MSFT_DSCLocalConfigurationManager' -MethodName 'SendMetaConfigurationApply' -Namespace $dscNamespace -CimSession $script:session -Arguments $sendMetaConfigApplyArgument } | Should Not Throw
+        # { Set-DscLocalConfigurationManager -Path $metaconfigurationOutputPath -CimSession $script:session } | Should Not Throw
         
-        $metaConfig = Get-DscLocalConfigurationManager -CimSession $script:session
+        $metaConfig = Invoke-CimMethod -ClassName 'MSFT_DSCLocalConfigurationManager' -MethodName 'GetDscLocalConfigurationManager' -Namespace $dscNamespace -CimSession $script:session
+        
+        # $metaConfig = Get-DscLocalConfigurationManager -CimSession $script:session
         $metaConfig.RefreshMode.ToUpper() | Should Be $lcmSettings.RefreshMode.ToUpper()
         $metaConfig.ConfigurationModeFrequencyMins | Should Be $lcmSettings.ConfigurationModeFrequencyMins
 	}
